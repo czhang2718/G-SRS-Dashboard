@@ -8,10 +8,63 @@ library(httr)
 library(gghighlight)
 library(dplyr)
 library(writexl)
+library(plotly)
 
 function(input, output, session) {
     
     # ---------------------------------------PAGE 1------------------------------------------
+    pts <- reactiveValues(data = data.frame(name = character(), cor = double()));
+    
+    
+    # on change, clear input of other_ae
+    observeEvent(input$ae1, {
+        updateSelectInput(session, "other_ae");
+    })
+    
+    observeEvent(input$other_ae, {
+        ae_list = input$other_ae
+        
+        
+        if(dim(pts$data)[1] < length(ae_list)){
+            new_ae = tail(ae_list, n=1);
+            pt1 <- subset(dset, select=c(INAME,CASE_COUNT, PT_COUNT, PT_TERM, PRR, L2_PRR, ATC1, ATC2, ATC3, ATC4),
+                          subset=(PT_TERM == input$ae1))
+            pt2 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, PRR, L2_PRR, ATC1, ATC2, ATC3, ATC4),
+                          subset = (PT_TERM == new_ae))
+            comb = merge(pt1, pt2, by="INAME") %>% distinct()
+            # print(cor(comb$L2_PRR.x, comb$L2_PRR.y));
+            # print("data");
+            
+            pts$data = rbind(pts$data, data.frame(name = new_ae, cor = cor(comb$L2_PRR.x, comb$L2_PRR.y)));
+            # print(pts$data)
+            
+            # pts = rbind(pts$data, new_ae);
+            # cors = rbind(bors, cor(comb$L2_PRR.x, comb$L2_PRR.y));
+            # df = data.frame(pts, cors, stringsAsFactors = FALSE);
+            # df$pts = factor(df$pts, levels = unique(df$pts)[order(df$cors, decreasing = TRUE)]);
+            # df = df[sort(df$cor),];
+            
+            # sort doesn't work, and messes plot up :(
+            # pts$data = pts$data[sort(pts$data$cor),];
+        }
+        else{
+            del = setdiff(pts$data$name, ae_list);
+            pts$data = pts$data[which(pts$data$name != del),];
+        }
+        
+    })
+    
+    output$single_ae1 <- renderPlotly({
+        # print("PLOT DATA");
+        # print(pts$data);
+        dat = pts$data;
+        plot_ly(dat, x = ~reorder(name, cor), y = ~cor, type = "bar") %>% 
+            layout(
+                xaxis = list(title = "Adverse Event"),
+                yaxis = list(title = "Correlation")
+            );
+    })
+    
     
     # CLASS LEVEL 1
     list1 <- reactive({
@@ -230,10 +283,11 @@ function(input, output, session) {
         # if not protein, display mol using cid, uses script.js
         else{
             str = paste0('
+            <script>lastClicked = ""; </script>
                         <div class="btn-group btn-group-justified">
-                            <a class="btn btn-default" id = "threed" onclick = "display_mol(', cid, ')" autofocus>3d</a>
-                            <a class="btn btn-default" id = "twod" onclick = "display_smiles(&#39;', name, '&#39;)">2d</a>
-                            <a class="btn btn-default" id = "cpk">CPK Color Code</a>
+                            <a class="btn btn-default button-obj" id = "threed" onclick = "display_mol(this.id,', cid, ')" autofocus>3d</a>
+                            <a class="btn btn-default button-obj" id = "twod" onclick = "display_smiles(this.id, &#39;', name, '&#39;)">2d</a>
+                            <a class="btn btn-default button-obj" id = "cpk" onclick = "display_cpk(this.id)">CPK Color Code</a>
                         </div>
                         <div id="img"></div>
                         <script>
