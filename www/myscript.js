@@ -1,3 +1,7 @@
+let col_1a = false;
+let col_1b = true;
+let col_1c = true;
+
 let lastClicked = ""; //prevent rerendering
 
 function shade(id){
