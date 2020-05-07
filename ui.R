@@ -4,6 +4,7 @@ library(shinyWidgets)
 library(ggplot2)
 library(shinydashboard)
 library(xml2)
+library(plotly)
 
 # PAGE 1
 dashboardPage(
@@ -16,48 +17,62 @@ dashboardPage(
     ),
     dashboardBody(
         tags$script(src = "myscript.js"),
-        tags$link(rel = "stylesheet", type = "text/css", href = "bootstrap.css"),
+        tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
         tabItems(
-            tabItem("compare_ae", fluidRow(
-                column(width=4, 
-                       box(title = "Selectors", status = "warning", solidHeader = TRUE, width=NULL,
-                           collapsible = TRUE,
-                           selectizeInput("xcol","Adverse Event (x-axis)",vars,selected=vars[1],multiple=FALSE, 
-                                          options=list(maxOptions=12000)),
-                           selectizeInput("ycol","Adverse Event (y-axis)",vars,selected=vars[2],multiple=FALSE), 
-                                          options=list(maxOptions=12000)),
-                       box(title="Restrictions", status = "info", side="left", width=NULL,
-                           collapsible = TRUE,
-                           collapsed = TRUE,
-                           sliderInput(inputId="casecount",label="Substance Count",min=100,max=50000,value=1000),
-                           sliderInput(inputId="ptcount",label="Adverse Event Count",min=5,max=100,value=10)),
-                       box(title="Filter by ATC Classification", status = "danger", side="left", width=NULL,
-                           collapsible = TRUE,
-                           collapsed = TRUE,
-                           soldHeader = FALSE,
-                           uiOutput("list1"),
-                           uiOutput("list2"),
-                           uiOutput("list3"),
-                           uiOutput("list4")
-                       )),
-                
-                column(width=8,
-                       tabBox(
-                           id = "tabset",
-                           # height = "450px",
-                           width = NULL,
-                           tabPanel("Plot", div(
-                               style = "position:relative",
-                               plotOutput("scatterPlot", 
-                                          hover = hoverOpts("plot_hover"),
-                                          click = clickOpts(id = "plot_click")),
-                               uiOutput("hover_info"),
-                               uiOutput("click_info"),
-                               textOutput('cor1a'),
-                               textOutput('cor1b'),
-                               tags$head(tags$style("#cor1a{font-size: 16px; color: grey}")),
-                               tags$head(tags$style("#cor1b{font-size: 16px; color: grey}"))
-                           )),
+            tabItem("compare_ae", 
+                fluidRow(
+                    box(title = "Compare Multiple Substances", height = 700, width = 12, 
+                        selectizeInput("ae1", "Adverse Event", vars, width = "100%",  selected = vars[4], options = list(maxOptions=12000)),
+                        selectizeInput("other_ae", "Compare To", vars, width = "100%", options = list(maxOptions=12000), multiple = TRUE),
+                        actionButton("classes", "Filter"),    
+                        plotlyOutput("single_ae1")
+                       ),
+                ),
+                fluidRow(
+                    column(width=4, 
+                           box(id = "box1a", title = "Selectors", status = "warning", solidHeader = TRUE, width=NULL,
+                               collapsible = TRUE,
+                               selectizeInput("xcol","Adverse Event (x-axis)",vars,selected=vars[1],multiple=FALSE, 
+                                              options=list(maxOptions=12000)),
+                               selectizeInput("ycol","Adverse Event (y-axis)",vars,selected=vars[2],multiple=FALSE), 
+                                              options=list(maxOptions=12000)),
+                           box(id = "box1b", title="Restrictions", status = "info", side="left", width=NULL,
+                               collapsible = TRUE,
+                               collapsed = TRUE,
+                               sliderInput(inputId="casecount",label="Substance Count",min=100,max=50000,value=1000),
+                               sliderInput(inputId="ptcount",label="Adverse Event Count",min=5,max=100,value=10)),
+                           box(id = "box1c", title="Filter by ATC Classification", status = "danger", side="left", width=NULL,
+                               collapsible = TRUE,
+                               collapsed = TRUE,
+                               soldHeader = FALSE,
+                               uiOutput("list1"),
+                               uiOutput("list2"),
+                               uiOutput("list3"),
+                               uiOutput("list4")
+                           ),
+                           collapseInput(boxId = "box1a"),
+                           collapseInput(boxId = "box1b"),
+                           collapseInput(boxId = "box1c")),
+                    
+                    column(width=8,
+                           tabBox(
+                               title = "Correlate two substances",
+                               id = "tabset",
+                               # height = "450px",
+                               width = NULL,
+                               tabPanel("Plot", div(
+                                   style = "position:relative",
+                                   plotOutput("scatterPlot", 
+                                              hover = hoverOpts("plot_hover"),
+                                              click = clickOpts(id = "plot_click")),
+                                   uiOutput("hover_info"),
+                                   uiOutput("click_info"),
+                                   textOutput('cor1a'),
+                                   textOutput('cor1b'),
+                                   tags$head(tags$style("#cor1a{font-size: 16px; color: grey}")),
+                                   tags$head(tags$style("#cor1b{font-size: 16px; color: grey}"))
+                               )
+                             ),
                            
                            tabPanel("Data Table", 
                                     div(style="display: inline-block; float: left", checkboxInput("alldata", "Unfiltered", value = FALSE)),
