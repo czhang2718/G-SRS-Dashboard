@@ -5,6 +5,7 @@ library(ggplot2)
 library(shinydashboard)
 library(xml2)
 library(plotly)
+library(shinyBS)
 
 # PAGE 1
 dashboardPage(
@@ -25,10 +26,10 @@ dashboardPage(
                             selectizeInput("ae1", "Adverse Event", vars, width = "100%",  selected = vars[4], options = list(maxOptions=12000)),
                             selectizeInput("other_ae", "Compare To", vars, width = "100%", options = list(maxOptions=12000), multiple = TRUE),
                             span("Showing correlations for drugs with >="),
-                            div(style="display: inline-block;", numericInput("num_obs", label = NULL, value = 5, width = "55px")),
+                            div(style="display: inline-block;", numericInput("num_obs", label = NULL, value = 5, width = "55px", min=, max=1000)),
                             span("observations. "),
                             actionLink("classes", "Filter Observations", style = "color: 'black'"),    # style doesn't work
-                            bsModal("filter", "Filter", trigger = "classes", size = "medium", 
+                            bsModal("filter", "Filter Observations", trigger = "classes", size = "medium", 
                                     h5("Restrictions on Substance Observations"),
                                     sliderInput(inputId="casecount_box1",label="Minimum Case Count",min=100,max=50000,value=1000),
                                     sliderInput(inputId="ptcount_box1",label="Minimum Adverse Event Count",min=5,max=100,value=10),
@@ -36,7 +37,9 @@ dashboardPage(
                                     uiOutput("class1"),
                                     uiOutput("class2"),
                                     uiOutput("class3"),
-                                    uiOutput("class4")
+                                    uiOutput("class4"),
+                                    actionButton("filt", "Filter"),
+                                    tags$head(tags$style("#filter .modal-footer{ display:none}"))
                             ),
                             plotlyOutput("single_ae1")
                         ),
