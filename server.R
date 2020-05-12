@@ -13,8 +13,68 @@ library(plotly)
 function(input, output, session) {
     
     # ---------------------------------------PAGE 1------------------------------------------
+    
     pts <- reactiveValues(data = data.frame(name = character(), cor = double()));
+    pts_temp <- reactiveValues(data = data.frame(name = character(), cor = double()));
     atcs <- reactiveValues(data = data.frame(atc1 = character(), atc2 = character(), atc3 = character(), atc4 = character()));
+    
+    #--------------------------------------------dt on plotly_click---------------------------------------------
+    observeEvent(event_data("plotly_click"), {
+        barData = event_data("plotly_click");
+        pt1 <- subset(dset, select=c(INAME,CASE_COUNT, PT_COUNT, PRR, ATC1, ATC2, ATC3, ATC4),
+                      subset=(PT_TERM == input$ae1 & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
+        pt2 <- subset(dset, select = c(INAME, PT_COUNT, PRR),
+                      subset = (PT_TERM == toupper(barData$x) & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
+        comb = merge(pt1, pt2, by="INAME") %>% distinct()
+        comb = comb[, c(1, 2, 3, 9, 4, 10, 5, 6, 7, 8)];
+        
+        output$drugs_dt <- renderDataTable({datatable(comb, selection = "none", options = list(
+            lengthMenu = list(c(10, 25, 50, -1), c("10", "25", "50", "All")),
+            autoWidth = TRUE,
+            scrollX = TRUE,
+            scrollY = '350px')
+            )})
+        
+        output$mult_comp_csv<- downloadHandler(
+            filename = function(){
+                paste(input$ae1, " VS. ", input$other_ae, ".csv");
+            },
+            content = function(file){
+                write.csv(comb, file, row.names=FALSE)
+            }
+        )
+        output$mult_comp_txt <- downloadHandler(
+            filename = function(){
+                paste(input$ae1, " VS. ", input$other_ae, ".txt");
+            },
+            content = function(file){
+                write.table(comb, file, row.names=FALSE)
+            }
+        )
+        output$mult_comp_xlsx <- downloadHandler(
+            filename = function(){
+                paste(input$ae1, " VS. ", input$other_ae, ".xlsx");
+            },
+            content = function(file){
+                write_xlsx(comb, path=file)
+            }
+        )
+        
+        showModal(modalDialog(
+            size = "l",
+            title = paste(toTitleCase(tolower(barData$x)), "vs. ", toTitleCase(tolower(input$ae1)), " (r=", round(barData$y, digits=2), ")"),
+            div(style="display: inline-block; float: right", downloadButton("mult_comp_csv", "CSV")),
+            " ",
+            div(style="display: inline-block; float: right", downloadButton("mult_comp_csv", "TXT")),
+            div(style="display: inline-block; float: right", downloadButton("mult_comp_csv", "XLSX")),
+            tags$br(),
+            tags$br(),
+            DT::dataTableOutput("drugs_dt")
+        ));
+    })
+    
+    
+    
     
     #----------------------------------reactive filter inputs---------------------------------------------
     atc_l1 <- reactive({
@@ -25,13 +85,11 @@ function(input, output, session) {
     })
     
     atc_l2 <- reactive({
-        if(dim(pts$data)[1] > 0){
-            dat = atcs$data;
-            if(!is.null(input$class_l1)){
-                list = dat$atc2[which(dat$atc1 %in% toupper(input$class_l1))]
-                return(toTitleCase(tolower(list)))
-            }
-            
+        dat = atcs$data;
+        if(!is.null(input$class_l1)){
+            list = dat$atc2[which(dat$atc1 %in% toupper(input$class_l1))]
+            if(length(list)>0) return(toTitleCase(tolower(list)))
+            else return(list)
         }
     })
     output$class2 = renderUI({
@@ -39,25 +97,24 @@ function(input, output, session) {
     })
     
     atc_l3 <- reactive({
-        if(dim(pts$data)[1] > 0){
-            dat = atcs$data;
-            if(!is.null(input$class_l2)){
-                list = dat$atc3[which(dat$atc2 %in% toupper(input$class_l2))]
-                return(toTitleCase(tolower(list)))
-            }
+        dat = atcs$data;
+        if(!is.null(input$class_l2)){
+            list = dat$atc3[which(dat$atc2 %in% toupper(input$class_l2))]
+            if(length(list)>0) return(toTitleCase(tolower(list)))
+            else return(list)
         }
+        
     })
     output$class3 = renderUI({
         selectInput("class_l3", "Level 3 Class", atc_l3(), multiple=TRUE, selected=NULL, selectize=TRUE)
     })
     
     atc_l4 <- reactive({
-        if(dim(pts$data)[1] > 0){
-            dat = atcs$data;
-            if(!is.null(input$class_l3)){
-                list = dat$atc4[which(dat$atc3 %in% toupper(input$class_l3))]
-                return(toTitleCase(tolower(list)))
-            }
+        dat = atcs$data;
+        if(!is.null(input$class_l3)){
+            list = dat$atc4[which(dat$atc3 %in% toupper(input$class_l3))]
+            if(length(list)>0) return(toTitleCase(tolower(list)))
+            else return(list)
         }
     })
     output$class4 = renderUI({
@@ -66,65 +123,79 @@ function(input, output, session) {
     
     #-------------------------------------------update pts$data bc atc filtering----------------------------------------
     observeEvent(input$class_l1, {
-        pts$data = data.frame(name = character(), cor = double());
+        if(length(input$class_l1) == 0) classes = atcs$data$atc1;
+        pts_temp$data = data.frame(name = character(), cor = double());
         for(ae in input$other_ae){
-            pt1 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, PRR, L2_PRR, ATC1),
+            pt1 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, L2_PRR, ATC1),
                           subset=(PT_TERM == input$ae1 & ATC1 %in% toupper(input$class_l1) & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
-            pt2 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, PRR, L2_PRR, ATC1),
+            pt2 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, L2_PRR, ATC1),
                           subset = (PT_TERM == ae & ATC1 %in% toupper(input$class_l1) & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
             comb = merge(pt1, pt2, by="INAME") %>% distinct()
             if(length(comb$INAME) < input$num_obs){ }
             else{
-                pts$data = rbind(pts$data, data.frame(name = ae, cor = cor(comb$L2_PRR.x, comb$L2_PRR.y)));
+                pts_temp$data = rbind(pts_temp$data, data.frame(name = ae, cor = cor(comb$L2_PRR.x, comb$L2_PRR.y)));
             }
         }
     })
     observeEvent(input$class_l2, {
-        pts$data = data.frame(name = character(), cor = double());
+        if(length(input$class_l2) == 0) classes = atcs$data$atc2;
+        pts_temp$data = data.frame(name = character(), cor = double());
         for(ae in input$other_ae){
-            pt1 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, PRR, L2_PRR, ATC2),
+            pt1 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, L2_PRR, ATC2),
                           subset=(PT_TERM == input$ae1 & ATC2 %in% toupper(input$class_l2) & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
-            pt2 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, PRR, L2_PRR, ATC1, ATC2, ATC3, ATC4),
+            pt2 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, L2_PRR, ATC1, ATC2, ATC3, ATC4),
                           subset = (PT_TERM == ae & ATC2 %in% toupper(input$class_l2) & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
             comb = merge(pt1, pt2, by="INAME") %>% distinct()
             if(length(comb$INAME) < input$num_obs){ }
             else{
-                pts$data = rbind(pts$data, data.frame(name = ae, cor = cor(comb$L2_PRR.x, comb$L2_PRR.y)));
+                pts_temp$data = rbind(pts_temp$data, data.frame(name = ae, cor = cor(comb$L2_PRR.x, comb$L2_PRR.y)));
             }
             
         }
     })
     observeEvent(input$class_l3, {
-        pts$data = data.frame(name = character(), cor = double());
+        if(length(input$class_l3) == 0) classes = atcs$data$atc3;
+        pts_temp$data = data.frame(name = character(), cor = double());
         for(ae in input$other_ae){
-            pt1 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, PRR, L2_PRR, ATC3),
+            pt1 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, L2_PRR, ATC3),
                           subset=(PT_TERM == input$ae1 & ATC3 %in% toupper(input$class_l3) & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
-            pt2 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, PRR, L2_PRR, ATC3),
+            pt2 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM,  L2_PRR, ATC3),
                           subset = (PT_TERM == ae & ATC3 %in% toupper(input$class_l3) & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
             comb = merge(pt1, pt2, by="INAME") %>% distinct()
             if(length(comb$INAME) < input$num_obs){ }
             else{
-                pts$data = rbind(pts$data, data.frame(name = ae, cor = cor(comb$L2_PRR.x, comb$L2_PRR.y)));
+                pts_temp$data = rbind(pts_temp$data, data.frame(name = ae, cor = cor(comb$L2_PRR.x, comb$L2_PRR.y)));
             }
             
         }
     })
     observeEvent(input$class_l4, {
-        pts$data = data.frame(name = character(), cor = double());
+        if(length(input$class_l4) == 0) classes = atcs$data$atc4;
+        pts_temp$data = data.frame(name = character(), cor = double());
         for(ae in input$other_ae){
-            pt1 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, PRR, L2_PRR, ATC4),
+            pt1 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, L2_PRR, ATC4),
                           subset=(PT_TERM == input$ae1 & ATC4 %in% toupper(input$class_l4) & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
-            pt2 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, PRR, L2_PRR, ATC4),
+            pt2 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, L2_PRR, ATC4),
                           subset = (PT_TERM == ae & ATC4 %in% toupper(input$class_l4) & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
             comb = merge(pt1, pt2, by="INAME") %>% distinct()
             if(length(comb$INAME) < input$num_obs){ }
             else{
-                pts$data = rbind(pts$data, data.frame(name = ae, cor = cor(comb$L2_PRR.x, comb$L2_PRR.y)));
+                pts_temp$data = rbind(pts_temp$data, data.frame(name = ae, cor = cor(comb$L2_PRR.x, comb$L2_PRR.y)));
             }
             
         }
     })
     
+    # apply filtering on "filter" button
+    observeEvent(input$filt, {
+        toggleModal(session, "filter", toggle="close");
+        if(!(length(input$class_l1)==0 && length(input$class_l2)==0 && length(input$class_l3)==0 && length(input$class_l4)==0)){
+            pts$data = pts_temp$data;
+        }
+        else{
+            rerender()
+        }
+    })
     
     
     #-------------------------------------choose substances to comp to funtionality-------------------------------------
@@ -157,6 +228,28 @@ function(input, output, session) {
         }
     })
     
+    # update plot on num_obs change
+    rerender <- function(){
+        pts$data <- data.frame(name = character(), cor = double());
+        for(ae in input$other_ae){
+            pt1 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, L2_PRR),
+                          subset=(PT_TERM == input$ae1 & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
+            pt2 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, L2_PRR),
+                          subset = (PT_TERM == ae & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
+            comb = merge(pt1, pt2, by="INAME") %>% distinct()
+            if(length(comb$INAME) < input$num_obs){ print(ae) }
+            else{
+                pts$data = rbind(pts$data, data.frame(name = ae, cor = cor(comb$L2_PRR.x, comb$L2_PRR.y)));
+            }
+            
+        }
+    }
+    
+    observeEvent(input$num_obs, {
+        rerender();
+    })
+    
+    #----------------------------------------------------plot-------------------------------------------------------
     
     output$single_ae1 <- renderPlotly({
         dat = pts$data;
@@ -167,11 +260,6 @@ function(input, output, session) {
                 showlegend = FALSE
             );
     })
-    
-    #------------------------------------------popup w/ data table on plotly_click--------------------------------------------
-    
-    # on click, show modal w/ filtered data, add download buttons (csv, xslx, txt)
-    
     
     #-------------------------------------------------------box 2 and 3; page 1-------------------------------------------------
     
@@ -322,19 +410,22 @@ function(input, output, session) {
     }
     
     
+    ord_subset <- function(){
+        subset <- getSubset()
+        return (data.frame("Substance" = toTitleCase(tolower(subset$INAME)), "Substance Count"=subset$CASE_COUNT.x, 
+                                 "count1"=subset$PT_COUNT.x, "prr1"=subset$PRR.x, 
+                                 "count2"=subset$PT_COUNT.y, "prr2"=subset$PRR.y, 
+                                 "ATC Level 1" = toTitleCase(tolower(subset$ATC1.x)), "ATC Level 2" = toTitleCase(tolower(subset$ATC2.x)), 
+                                 "ATC Level 3" = toTitleCase(tolower(subset$ATC3.x)), "ATC Level 4" = toTitleCase(tolower(subset$ATC4.x))))
+    }
+    
     # renders datatable of subsetted data
     output$table1<-renderDataTable({
         x = toTitleCase(tolower(input$xcol))
         y = toTitleCase(tolower(input$ycol))
-        subset <- getSubset()
         
-        ord_subset <- data.frame("Substance" = toTitleCase(tolower(subset$INAME)), "Substance Count"=subset$CASE_COUNT.x, 
-                                 "count1"=subset$PT_COUNT.x, "prr1"=subset$PRR.x, 
-                                 "count2"=subset$PT_COUNT.y, "prr2"=subset$PRR.y, 
-                                 "ATC Level 1" = toTitleCase(tolower(subset$ATC1.x)), "ATC Level 2" = toTitleCase(tolower(subset$ATC2.x)), 
-                                 "ATC Level 3" = toTitleCase(tolower(subset$ATC3.x)), "ATC Level 4" = toTitleCase(tolower(subset$ATC4.x)))
         
-        dt <- datatable(ord_subset, 
+        dt <- datatable(ord_subset(), 
                         selection = "single", 
                         rownames = FALSE,
                         colnames = c("Substance", "Substance Count", paste(x, " Count"), paste(x, " PRR"), paste(y, " Count"), paste(y, " PRR"),
@@ -385,8 +476,7 @@ function(input, output, session) {
                 HTML('<img id = "img2" src="https://ginas.ncats.nih.gov/ginas/app/assets/ginas/images/protein.svg", width=565>'),
                 footer = tagList(
                     modalButton("Exit"))
-            )
-            )
+            ))
         }
         
         # if not protein, display mol using cid, uses script.js
@@ -512,55 +602,56 @@ function(input, output, session) {
     
     output$download_csv <- downloadHandler(
         filename = function(){
-            "gsrs_data.csv"
+            paste(input$ycol, " vs. ", input$xcol, ".csv");
         },
         content = function(file){
-            write.csv(dset, file, row.names=FALSE)
+            write.csv(ord_subset(), file, row.names=FALSE)
         }
     )
     output$download_txt <- downloadHandler(
         filename = function(){
-            "gsrs_data.txt"
+            paste(input$ycol, " vs. ", input$xcol, ".txt");
         },
         content = function(file){
-            write.table(dset, file, row.names=FALSE)
+            write.table(ord_subset(), file, row.names=FALSE)
         }
     )
     output$download_xlsx <- downloadHandler(
         filename = function(){
-            "gsrs_data.xlsx"
+            paste(input$ycol, " vs. ", input$xcol, ".xlsx"); 
         },
         content = function(file){
-            write_xlsx(dset, path=file)
+            write_xlsx(ord_subset(), path=file)
         }
     )
     
+
+    
+    # ---------------------------------------PAGE 2------------------------------------------
     output$download_csv2 <- downloadHandler(
         filename = function(){
-            "gsrs_data.csv"
+            paste(input$ycol2, " vs. ", input$xcol2, ".csv");
         },
         content = function(file){
-            write.csv(dset, file, row.names=FALSE)
+            write.csv(getSubset2(), file, row.names=FALSE)
         }
     )
     output$download_txt2 <- downloadHandler(
         filename = function(){
-            "gsrs_data.txt"
+            paste(input$ycol2, " vs. ", input$xcol2, ".txt");
         },
         content = function(file){
-            write.table(dset, file, row.names=FALSE)
+            write.table(getSubset2(), file, row.names=FALSE)
         }
     )
     output$download_xlsx2 <- downloadHandler(
         filename = function(){
-            "gsrs_data.xlsx"
+            paste(input$ycol2, " vs. ", input$xcol2, ".xlsx");
         },
         content = function(file){
-            write_xlsx(dset, path=file)
+            write_xlsx(getSubset2(), path=file)
         }
     )
-    
-    # ---------------------------------------PAGE 2------------------------------------------
     
     #change to >= ?
     data2 <- reactive({
