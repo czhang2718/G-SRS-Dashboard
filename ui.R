@@ -12,6 +12,7 @@ dashboardPage(
     dashboardHeader(title = "G-SRS Data Explorer"),
     dashboardSidebar(
         sidebarMenu(
+            menuItem("Introduction", tabName="intro"),
             menuItem("Compare Adverse Events", tabName="compare_ae"),
             menuItem("Compare Substances", tabName = "compare_subs")
         )
@@ -20,37 +21,47 @@ dashboardPage(
         tags$script(src = "myscript.js"),
         tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
         tabItems(
-            tabItem("compare_ae", 
+            tabItem("intro",
                     fluidRow(
-                        box(title = "Compare Multiple Substances", width = 12, collapsible = TRUE,
-                            selectizeInput("ae1", "Adverse Event", vars, width = "100%",  selected = vars[4], options = list(maxOptions=12000)),
-                            selectizeInput("other_ae", "Compare To", vars, width = "100%", options = list(maxOptions=12000), multiple = TRUE),
-                            span("Showing correlations for drugs with >="),
-                            div(style="display: inline-block;", numericInput("num_obs", label = NULL, value = 5, width = "55px", min=, max=1000)),
-                            span("observations. "),
-                            actionLink("classes", "Filter Observations", style = "color: 'black'"),    # style doesn't work
-                            bsModal("filter", "Filter Observations", trigger = "classes", size = "medium", 
-                                    h5("Restrictions on Substance Observations"),
-                                    sliderInput(inputId="casecount_box1",label="Minimum Case Count",min=100,max=50000,value=1000),
-                                    sliderInput(inputId="ptcount_box1",label="Minimum Adverse Event Count",min=5,max=100,value=10),
-                                    h5("Filter Substances by ATC Classification"),
-                                    uiOutput("class1"),
-                                    uiOutput("class2"),
-                                    uiOutput("class3"),
-                                    uiOutput("class4"),
-                                    actionButton("filt", "Filter"),
-                                    tags$head(tags$style("#filter .modal-footer{ display:none}"))
-                            ),
-                            plotlyOutput("single_ae1")
-                        ),
+                      column(width = 12,
+                             selectizeInput("intro_drug", "Select Medical Drug", vars2, multiple=FALSE, width="100%")
+                             )  
                     ),
+                    fluidRow(
+                        
+                        column(width = 7,
+                               fluidRow(
+                                   column(width=12, 
+                                          tags$div(id="pie-div", box(id= "intro-pie", title = "Pie", width = NULL, status="warning",
+                                              plotlyOutput("pie_chart"))
+                                              )),
+                                   column(width=12, box(id="summary", title="Summary Table", width=NULL, status="primary",
+                                                        DTOutput("sum_table")))
+                                   
+                               )
+                        ),
+                        
+                        column(width = 5,
+                               box(id= "intro-box", title = "Drug - Adverse Event", width = NULL, 
+                                   span(style="vertical-align: top",  "Sorted by "),
+                                   div(style="display: inline-block; vertical-align: top", selectInput("sort_by", c("PT COUNT", "PRR"), 
+                                        label = NULL, selected="PT COUNT", multiple=FALSE, width = "110px")),
+                                   div(style="max-height: 530px; overflow-y: scroll; position: relative", plotlyOutput("top_ae"))
+                                   )
+                        )
+                        
+                    )
+                    
+            ),
+            
+            tabItem("compare_ae", 
                     fluidRow(
                         column(width=4, 
                                box(id = "box1a", title = "Selectors", status = "warning", solidHeader = TRUE, width=NULL,
                                    collapsible = TRUE,
-                                   selectizeInput("xcol","Adverse Event (x-axis)",vars,selected=vars[1],multiple=FALSE, 
+                                   selectizeInput("xcol","Adverse Event (x-axis)",vars,selected=vars[4],multiple=FALSE, 
                                                   options=list(maxOptions=12000)),
-                                   selectizeInput("ycol","Adverse Event (y-axis)",vars,selected=vars[2],multiple=FALSE), 
+                                   selectizeInput("ycol","Adverse Event (y-axis)",vars,selected=vars[5930],multiple=FALSE), 
                                    options=list(maxOptions=12000)),
                                box(id = "box1b", title="Restrictions", status = "info", side="left", width=NULL,
                                    collapsible = TRUE,
@@ -72,11 +83,11 @@ dashboardPage(
                         
                         column(width=8,
                                tabBox(
-                                   title = "Correlate two substances",
+                                   title = "Correlate two adverse events",
                                    id = "tabset",
                                    # height = "450px",
                                    width = NULL,
-                                   tabPanel("Plot", div(
+                                   tabPanel("Single Selection", div(
                                        style = "position:relative",
                                        plotOutput("scatterPlot", 
                                                   hover = hoverOpts("plot_hover"),
@@ -86,8 +97,7 @@ dashboardPage(
                                        textOutput('cor1a'),
                                        textOutput('cor1b'),
                                        tags$head(tags$style("#cor1a{font-size: 16px; color: grey}")),
-                                       tags$head(tags$style("#cor1b{font-size: 16px; color: grey}"))
-                                   )
+                                       tags$head(tags$style("#cor1b{font-size: 16px; color: grey}")))
                                    ),
                                    
                                    tabPanel("Data Table", 
@@ -96,52 +106,97 @@ dashboardPage(
                                             div(style="display: inline-block; float: right", downloadButton("download_txt", "TXT")),
                                             div(style="display: inline-block; float: right", downloadButton("download_csv", "CSV")),
                                             DTOutput("table1")
-                                   )
+                                   ),
+                                   tabPanel("Multiple Selection",
+                                            width = "100%",
+                                            # height = "100%",
+                                            selectizeInput("ae1", "Adverse Event", vars, width = "100%",  selected = vars[4], options = list(maxOptions=12000)),
+                                            selectizeInput("other_ae", "Compare With", vars, width = "100%", options = list(maxOptions=12000), multiple = TRUE),
+                                            span("Number of Observations \u2265"),
+                                            div(style="display: inline-block;", numericInput("num_obs", label = NULL, value = 5, width = "55px", min=1, max=1000)),
+                                            actionLink("classes", "Filter"),    
+                                            bsModal("filter", "Filter Observations", trigger = "classes", size = "large", 
+                                                    tags$div(
+                                                        style="display: block; float: left",
+                                                        h5("Restrictions on Substance Observations"),
+                                                        sliderInput(inputId="casecount_box1",label="Minimum Case Count",min=100,max=50000,value=1000),
+                                                        sliderInput(inputId="ptcount_box1",label="Minimum Adverse Event Count",min=5,max=100,value=10)
+                                                    ),
+                                                    tags$div(
+                                                        style="display: block; float: right",
+                                                        h5("Filter Substances by ATC Classification"),
+                                                        uiOutput("class1"),
+                                                        uiOutput("class2"),
+                                                        uiOutput("class3"),
+                                                        uiOutput("class4"),
+                                                        actionButton("filt", "Filter"),
+                                                        tags$head(tags$style("#filter .modal-footer{ display:none}"))
+                                                    )
+                                            ),
+                                            plotlyOutput("single_ae1")
+                                        )
                                    
                                )
                         )
                     )
                     
             ),
-            tabItem("compare_subs", fluidRow(
-                column(width=4,
-                       box(title = "Selectors", status = "success", solidHeader = TRUE, width=NULL,
-                           collapsible = TRUE,
-                           selectizeInput("xcol2","Substance x-axis",vars2,selected=vars2[2],multiple=FALSE,
-                                          options=list(maxOptions=2500)),
-                           selectizeInput("ycol2","Substance y-axis",vars2,selected=vars2[3],multiple=FALSE,
-                                          options=list(maxOptions=2500))),
-                       box(title="Restrictions", status="info", side="left", width=NULL,
-                           collapsible = TRUE,
-                           collapsed = TRUE,
-                           sliderInput(inputId="ptcount2",label="Adverse Event Count",min=5,max=100,value=10)
-                       )
-                ),
-                column(width=8,
-                       tabBox(
-                           width=NULL,
-                           id = "tabset2",
-                           # height = "450px",
-                           tabPanel("Plot", div(
-                               style = "position:relative",
-                               plotOutput("scatterPlot2", hover = hoverOpts("plot_hover2")),
-                               uiOutput("hover_coords"),
-                               textOutput('cor2'),
-                               tags$head(tags$style("#cor2{font-size: 16px; color: grey}"))
-                           )),
-                           
-                           tabPanel("Data Table", 
-                                    div(style="display: inline-block; float: right", downloadButton("download_xlsx2", "XLSX")),
-                                    div(style="display: inline-block; float: right", downloadButton("download_txt2", "TXT")),
-                                    div(style="display: inline-block; float: right", downloadButton("download_csv2", "CSV")),
-                                    tags$br(), tags$br(),
-                                    DTOutput("table2")
+            tabItem("compare_subs",
+                    fluidRow(
+                        box(title = "Compare multiple substances", width = 12, collapsible = TRUE,
+                            selectizeInput("sub1", "Substance", vars2, width = "100%",  selected = vars2[4], options = list(maxOptions=2500)),
+                            # other_ae --> sub2
+                            selectizeInput("sub2", "Compare With:", vars2, width = "100%", options = list(maxOptions=2500), multiple = TRUE),
+                            span("Showing correlations for adverse events with >="),
+                            div(style="display: inline-block;", numericInput("num_subs", label = NULL, value = 5, width = "55px", min=2, max=1000)),
+                            span("correlated substances. "),
+                            "Minimum adverse event count: ",
+                            div(style="display: inline-block;", numericInput("min_ae", label = NULL, value = 10, width = "55px", min=5, max=100)),
+                            plotlyOutput("subs_bar")
+                        ),
+                    ),
+                    
+                    fluidRow(
+                        column(width=4,
+                           box(title = "Selectors", status = "success", solidHeader = TRUE, width=NULL,
+                               collapsible = TRUE,
+                               selectizeInput("xcol2","Substance x-axis",vars2,selected=vars2[2],multiple=FALSE,
+                                              options=list(maxOptions=2500)),
+                               selectizeInput("ycol2","Substance y-axis",vars2,selected=vars2[3],multiple=FALSE,
+                                              options=list(maxOptions=2500))),
+                           box(title="Restrictions", status="info", side="left", width=NULL,
+                               collapsible = TRUE,
+                               collapsed = TRUE,
+                               sliderInput(inputId="ptcount2",label="Adverse Event Count",min=5,max=100,value=10)
                            )
-                       )
+                    ),
+                    column(width=8,
+                           tabBox(
+                               title = "Correlate two substances",
+                               width=NULL,
+                               id = "tabset2",
+                               # height = "450px",
+                               tabPanel("Plot", div(
+                                   style = "position:relative",
+                                   plotOutput("scatterPlot2", hover = hoverOpts("plot_hover2")),
+                                   uiOutput("hover_coords"),
+                                   textOutput('cor2'),
+                                   tags$head(tags$style("#cor2{font-size: 16px; color: grey}"))
+                               )),
+                               
+                               tabPanel("Data Table", 
+                                        div(style="display: inline-block; float: right", downloadButton("download_xlsx2", "XLSX")),
+                                        div(style="display: inline-block; float: right", downloadButton("download_txt2", "TXT")),
+                                        div(style="display: inline-block; float: right", downloadButton("download_csv2", "CSV")),
+                                        tags$br(), tags$br(),
+                                        DTOutput("table2")
+                               )
+                           )
+                    )
+                    
                 )
-                
             )
-            )
+            
         )
     )
 )
