@@ -9,18 +9,74 @@ library(gghighlight)
 library(dplyr)
 library(writexl)
 library(plotly)
+library(shinyBS)
 
 function(input, output, session) {
     
-    # ---------------------------------------PAGE 1------------------------------------------
+    # ------------------------------------------------INTRO PG--------------------------------------------------
+    
+    #right-side horizontal bar chart
+    output$top_ae <- renderPlotly({
+        aes = dset[which(dset$INAME == input$intro_drug), c(3, 7, 11)];
+        if(input$sort_by == "PT COUNT"){
+            plot_ly(aes, x=~PT_COUNT, y=~reorder(PT_TERM, PT_COUNT), type = "bar", orientation = "h", height = 500+ 11*nrow(aes), color = I("orange")) %>%
+                layout(showlegend = FALSE, yaxis = list(title="", automargin = TRUE)) %>%
+                plotly::config(displaylogo = FALSE)
+        }
+        else {
+            plot_ly(aes, x=~PRR, y=~reorder(PT_TERM, PRR), type = "bar", orientation = "h", height = 500+ 11*nrow(aes)) %>%
+                layout(showlegend = FALSE, yaxis = list(title="", automargin = TRUE)) %>%
+                plotly::config(displaylogo = FALSE)
+        }
+    })
+    
+    #pie
+    output$pie_chart <- renderPlotly({
+        total_rows = nrow(dset[which(dset$INAME==input$intro_drug),]);
+        validate(
+            need(total_rows>0, "No Data Available")
+        )
+        g1 = nrow(dset[which(dset$INAME==input$intro_drug & dset$PRR<1),]);
+        g2 = nrow(dset[which(dset$INAME==input$intro_drug & dset$PRR>=1 & dset$PRR<5),]);
+        g3 = nrow(dset[which(dset$INAME==input$intro_drug & dset$PRR>=5 & dset$PRR<10),]);
+        g4 = nrow(dset[which(dset$INAME==input$intro_drug & dset$PRR>=10 & dset$PRR<100),]);
+        g5 = nrow(dset[which(dset$INAME==input$intro_drug & dset$PRR>=100),]);
+        df <- data.frame("label"=c("<1", "1-5", "5-10", "10-100", ">100"), "vals" = c(g1, g2, g3, g4, g5));
+        plot_ly(df, labels=~label, values=~vals, type="pie");
+    })
+    
+    #summary table
+    output$sum_table <- renderDataTable({
+        #mean, median, standard deviation, count, iqr
+        dat1 <- dset$PRR[which(dset$INAME==input$intro_drug)];
+        mean_prr = mean(dat1);
+        median_prr = median(dat1);
+        sd_prr = sd(dat1);
+        iqr_prr = IQR(dat1);
+        
+        dat2 <- dset$PT_COUNT[which(dset$INAME==input$intro_drug)];
+        mean_count = mean(dat2);
+        median_count = median(dat2);
+        sd_count = sd(dat2);
+        iqr_count = IQR(dat2);
+        df <- cbind(data.frame("1" =c("PRR", "Count"), "2"=c(mean_prr, mean_count), "3"=c(median_prr, median_count),
+                    "4" = c(sd_prr, sd_count), "5"=c(iqr_prr, iqr_count)));
+        colnames(df) = c(input$intro_drug, "Mean", "Median", "Standard Deviation", "Interquartile Range");
+        
+        dt <- datatable(df, rownames = FALSE, options = list(dom = 't', autoWidth=FALSE));
+        dt
+    })
+    
+    # -------------------------------------------------PAGE 2---------------------------------------------------
     
     pts <- reactiveValues(data = data.frame(name = character(), cor = double()));
     pts_temp <- reactiveValues(data = data.frame(name = character(), cor = double()));
     atcs <- reactiveValues(data = data.frame(atc1 = character(), atc2 = character(), atc3 = character(), atc4 = character()));
+    curr_level <- reactiveVal(value = 0);
     
     #--------------------------------------------dt on plotly_click---------------------------------------------
-    observeEvent(event_data("plotly_click"), {
-        barData = event_data("plotly_click");
+    observeEvent(event_data("plotly_click", source = "A"),  {
+        barData = event_data("plotly_click", source = "A");
         pt1 <- subset(dset, select=c(INAME,CASE_COUNT, PT_COUNT, PRR, ATC1, ATC2, ATC3, ATC4),
                       subset=(PT_TERM == input$ae1 & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
         pt2 <- subset(dset, select = c(INAME, PT_COUNT, PRR),
@@ -37,7 +93,7 @@ function(input, output, session) {
         
         output$mult_comp_csv<- downloadHandler(
             filename = function(){
-                paste(input$ae1, " VS. ", input$other_ae, ".csv");
+                paste(input$ae1, " VS. ", barData$x, ".csv");
             },
             content = function(file){
                 write.csv(comb, file, row.names=FALSE)
@@ -45,7 +101,7 @@ function(input, output, session) {
         )
         output$mult_comp_txt <- downloadHandler(
             filename = function(){
-                paste(input$ae1, " VS. ", input$other_ae, ".txt");
+                paste(input$ae1, " VS. ", barData$x, ".txt");
             },
             content = function(file){
                 write.table(comb, file, row.names=FALSE)
@@ -53,7 +109,7 @@ function(input, output, session) {
         )
         output$mult_comp_xlsx <- downloadHandler(
             filename = function(){
-                paste(input$ae1, " VS. ", input$other_ae, ".xlsx");
+                paste(input$ae1, " VS. ", barData$x, ".xlsx");
             },
             content = function(file){
                 write_xlsx(comb, path=file)
@@ -65,8 +121,8 @@ function(input, output, session) {
             title = paste(toTitleCase(tolower(barData$x)), "vs. ", toTitleCase(tolower(input$ae1)), " (r=", round(barData$y, digits=2), ")"),
             div(style="display: inline-block; float: right", downloadButton("mult_comp_csv", "CSV")),
             " ",
-            div(style="display: inline-block; float: right", downloadButton("mult_comp_csv", "TXT")),
-            div(style="display: inline-block; float: right", downloadButton("mult_comp_csv", "XLSX")),
+            div(style="display: inline-block; float: right", downloadButton("mult_comp_txt", "TXT")),
+            div(style="display: inline-block; float: right", downloadButton("mult_comp_xlsx", "XLSX")),
             tags$br(),
             tags$br(),
             DT::dataTableOutput("drugs_dt")
@@ -122,79 +178,75 @@ function(input, output, session) {
     })
     
     #-------------------------------------------update pts$data bc atc filtering----------------------------------------
-    observeEvent(input$class_l1, {
-        if(length(input$class_l1) == 0) classes = atcs$data$atc1;
+    
+    # helper to render based on all inputs
+    rerender <- function() {
+        if(curr_level()==0){
+            col = dset$ATC1;
+            list = dset$ATC1;
+        }
+        else if(curr_level()==1){
+            col = dset$ATC1;
+            list = input$class_l1;
+        }
+        else if(curr_level()==2){
+            col = dset$ATC2;
+            list = input$class_l2;
+        }
+        else if(curr_level()==3){
+            col = dset$ATC3;
+            list = input$class_l3;
+        }
+        else if(curr_level()==4){
+            col = dset$ATC4;
+            list = input$class_l4;
+        }
         pts_temp$data = data.frame(name = character(), cor = double());
         for(ae in input$other_ae){
+            atc_col = dset$ATC1;
             pt1 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, L2_PRR, ATC1),
-                          subset=(PT_TERM == input$ae1 & ATC1 %in% toupper(input$class_l1) & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
+                          subset=(PT_TERM == input$ae1 & col %in% toupper(list) & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
             pt2 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, L2_PRR, ATC1),
-                          subset = (PT_TERM == ae & ATC1 %in% toupper(input$class_l1) & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
+                          subset = (PT_TERM == ae & col %in% toupper(list) & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
             comb = merge(pt1, pt2, by="INAME") %>% distinct()
-            if(length(comb$INAME) < input$num_obs){ }
-            else{
+            if(length(comb$INAME) >= input$num_obs) {
                 pts_temp$data = rbind(pts_temp$data, data.frame(name = ae, cor = cor(comb$L2_PRR.x, comb$L2_PRR.y)));
             }
         }
+    }
+
+    
+    
+    observeEvent(input$class_l1, {
+        if(length(input$class_l1) == 0){
+            curr_level = 0;
+        }
+        rerender();
     })
     observeEvent(input$class_l2, {
-        if(length(input$class_l2) == 0) classes = atcs$data$atc2;
-        pts_temp$data = data.frame(name = character(), cor = double());
-        for(ae in input$other_ae){
-            pt1 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, L2_PRR, ATC2),
-                          subset=(PT_TERM == input$ae1 & ATC2 %in% toupper(input$class_l2) & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
-            pt2 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, L2_PRR, ATC1, ATC2, ATC3, ATC4),
-                          subset = (PT_TERM == ae & ATC2 %in% toupper(input$class_l2) & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
-            comb = merge(pt1, pt2, by="INAME") %>% distinct()
-            if(length(comb$INAME) < input$num_obs){ }
-            else{
-                pts_temp$data = rbind(pts_temp$data, data.frame(name = ae, cor = cor(comb$L2_PRR.x, comb$L2_PRR.y)));
-            }
-            
+        if(length(input$class_l2) == 0){
+            curr_level = 1;
         }
+        rerender();
     })
     observeEvent(input$class_l3, {
-        if(length(input$class_l3) == 0) classes = atcs$data$atc3;
-        pts_temp$data = data.frame(name = character(), cor = double());
-        for(ae in input$other_ae){
-            pt1 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, L2_PRR, ATC3),
-                          subset=(PT_TERM == input$ae1 & ATC3 %in% toupper(input$class_l3) & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
-            pt2 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM,  L2_PRR, ATC3),
-                          subset = (PT_TERM == ae & ATC3 %in% toupper(input$class_l3) & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
-            comb = merge(pt1, pt2, by="INAME") %>% distinct()
-            if(length(comb$INAME) < input$num_obs){ }
-            else{
-                pts_temp$data = rbind(pts_temp$data, data.frame(name = ae, cor = cor(comb$L2_PRR.x, comb$L2_PRR.y)));
-            }
-            
+        if(length(input$class_l3) == 0){
+            curr_level = 2;
         }
+        rerender();
     })
     observeEvent(input$class_l4, {
-        if(length(input$class_l4) == 0) classes = atcs$data$atc4;
-        pts_temp$data = data.frame(name = character(), cor = double());
-        for(ae in input$other_ae){
-            pt1 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, L2_PRR, ATC4),
-                          subset=(PT_TERM == input$ae1 & ATC4 %in% toupper(input$class_l4) & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
-            pt2 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, L2_PRR, ATC4),
-                          subset = (PT_TERM == ae & ATC4 %in% toupper(input$class_l4) & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
-            comb = merge(pt1, pt2, by="INAME") %>% distinct()
-            if(length(comb$INAME) < input$num_obs){ }
-            else{
-                pts_temp$data = rbind(pts_temp$data, data.frame(name = ae, cor = cor(comb$L2_PRR.x, comb$L2_PRR.y)));
-            }
-            
+        if(length(input$class_l4) == 0){
+            curr_level = 3;
         }
+        rerender();
     })
     
     # apply filtering on "filter" button
     observeEvent(input$filt, {
+        rerender();
+        pts$data = pts_temp$data;
         toggleModal(session, "filter", toggle="close");
-        if(!(length(input$class_l1)==0 && length(input$class_l2)==0 && length(input$class_l3)==0 && length(input$class_l4)==0)){
-            pts$data = pts_temp$data;
-        }
-        else{
-            rerender()
-        }
     })
     
     
@@ -202,8 +254,8 @@ function(input, output, session) {
     
     # on change, clear input of other_ae
     observeEvent(input$ae1, {
-        updateSelectizeInput(session, "other_ae", label = "Compare To", choices = vars, options = list(maxOptions=12000));
-        pts$data = data.frame(name = character(), cor = double());
+        rerender();
+        pts$data = pts_temp$data;
     })
     
     
@@ -228,40 +280,29 @@ function(input, output, session) {
         }
     })
     
-    # update plot on num_obs change
-    rerender <- function(){
-        pts$data <- data.frame(name = character(), cor = double());
-        for(ae in input$other_ae){
-            pt1 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, L2_PRR),
-                          subset=(PT_TERM == input$ae1 & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
-            pt2 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, L2_PRR),
-                          subset = (PT_TERM == ae & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
-            comb = merge(pt1, pt2, by="INAME") %>% distinct()
-            if(length(comb$INAME) < input$num_obs){ print(ae) }
-            else{
-                pts$data = rbind(pts$data, data.frame(name = ae, cor = cor(comb$L2_PRR.x, comb$L2_PRR.y)));
-            }
-            
-        }
-    }
-    
     observeEvent(input$num_obs, {
         rerender();
+        pts$data = pts_temp$data;
     })
     
     #----------------------------------------------------plot-------------------------------------------------------
     
     output$single_ae1 <- renderPlotly({
-        dat = pts$data;
-        plot_ly(dat, x = ~reorder(name, -cor), y = ~cor, type = "bar", color = ~cor>0, colors = c("#e82a2a", "#1b3fcf"), name = ~ifelse(cor > 0, "> 0", "<= 0")) %>% 
+        dat = pts$data
+        validate(
+            need(nrow(dat)>0, "No Data Available")
+        )
+        plot_ly(dat, x = ~reorder(name, -cor), y = ~round(cor, digits = 3), type = "bar", color = ~cor>0, colors = c("#e82a2a", "#1b3fcf"), 
+                source = "A", name = "<extra><extra>") %>% 
             layout(
-                xaxis = list(title = "Adverse Event"),
                 yaxis = list(title = "Correlation"),
+                xaxis = list(title = "", tickangle = 90),
                 showlegend = FALSE
-            );
+            ) %>%
+            plotly::config(displaylogo = FALSE)
     })
     
-    #-------------------------------------------------------box 2 and 3; page 1-------------------------------------------------
+    #-------------------------------------------------------box 2 and 3; page 2-------------------------------------------------
     
     # CLASS LEVEL 1
     list1 <- reactive({
@@ -361,7 +402,7 @@ function(input, output, session) {
                 subtitle = "PRR Values are Log-Transformed in Both Axes"
             ) +
             theme_bw() +
-            theme(plot.title = element_text(hjust = 0.5, size=15), plot.subtitle = element_text(hjust = 0.5, size=13)) + 
+            theme(plot.title = element_text(hjust = 0.5, size=15), axis.title = element_text(size = 13), plot.subtitle = element_text(hjust = 0.5, size=13)) + 
             xlim(c(xmin, xmax)) +
             ylim(c(ymin, ymax)) +
             gghighlight(toupper(atc_col()) %in% toupper(class()))
@@ -627,7 +668,137 @@ function(input, output, session) {
     
 
     
-    # ---------------------------------------PAGE 2------------------------------------------
+    # -------------------------------------------------------PAGE 3--------------------------------------------------------
+    
+    
+    #---------------------------------------Compare multiple substances plot----------------------------------------
+    
+    subs <- reactiveValues(data = data.frame(name = character(), cor = double()));
+    
+    #actual plot
+    
+    output$subs_bar <- renderPlotly({
+        dat = subs$data;
+        plot_ly(dat, x = ~reorder(name, -cor), y = ~cor, type = "bar", color = ~cor>0, colors = c("#e82a2a", "#1b3fcf"), 
+                source = "B", name = ~ifelse(cor > 0, "> 0", "<= 0")) %>% 
+            layout(
+                xaxis = list(title = "Substance"),
+                yaxis = list(title = "Correlation"),
+                showlegend = FALSE
+            );
+    })
+    
+    
+    #rerender
+    observeEvent(input$num_subs, {
+        rerender_subs();
+    })
+    observeEvent(input$min_ae, {
+        rerender_subs();
+    })
+    
+    # update subs for plot
+    rerender_subs <- function(){
+        subs$data <- data.frame(name = character(), cor = double());
+        for(sub in input$sub2){
+            sub1 <- subset(dset, select=c(PT_TERM, PT_COUNT, PT_TERM, PRR, L2_PRR),
+                           subset=(INAME == input$sub1 & PT_COUNT>input$min_ae))
+            sub2 <- subset(dset, select=c(PT_TERM, PT_COUNT, PT_TERM, PRR, L2_PRR),
+                           subset=(INAME == sub & PT_COUNT>input$min_ae))
+            comb = merge(sub1, sub2, by="PT_TERM") %>% distinct()
+            if(length(comb$PT_TERM) < input$num_subs){ }
+            else{
+                subs$data = rbind(subs$data, data.frame(name = sub, cor = cor(comb$L2_PRR.x, comb$L2_PRR.y)));
+            }
+            
+        }
+    }
+    
+    #when sub1 changes
+    observeEvent(input$sub1, {
+        rerender_subs();
+    })
+    
+    #when sub2 changes
+    observeEvent(input$sub2, {
+        subs_list = input$sub2
+        if(dim(subs$data)[1] < length(subs_list)){
+            new_sub = tail(subs_list, n=1);
+            sub1 <- subset(dset, select=c(PT_TERM, PT_COUNT, PT_TERM, PRR, L2_PRR),
+                          subset=(INAME == input$sub1 & PT_COUNT>input$min_ae))
+            sub2 <- subset(dset, select=c(PT_TERM, PT_COUNT, PT_TERM, PRR, L2_PRR),
+                           subset=(INAME == new_sub & PT_COUNT>input$min_ae))
+            comb = merge(sub1, sub2, by="PT_TERM") %>% distinct()
+            if(length(comb$PT_TERM) < input$num_subs){ }
+            else{
+                subs$data = rbind(subs$data, data.frame(name = new_sub, cor = cor(comb$L2_PRR.x, comb$L2_PRR.y)));
+            }
+        }
+        else{
+            del = setdiff(pts$data$name, subs_list);
+            subs$data = subs$data[which(subs$data$name != del),];
+        }
+    })
+    
+    
+    #onclick data
+    observeEvent(event_data("plotly_click", source = "B"),  {
+        barData = event_data("plotly_click", source = "B");
+        sub1 <- subset(dset, select=c(PT_TERM, PT_COUNT, PT_TERM, PRR, L2_PRR),
+                       subset=(INAME == input$sub1 & PT_COUNT>input$min_ae))
+        sub2 <- subset(dset, select=c(PT_TERM, PT_COUNT, PT_TERM, PRR, L2_PRR),
+                       subset=(INAME == barData$x & PT_COUNT>input$min_ae))
+        comb = merge(sub1, sub2, by="PT_TERM") %>% distinct()
+        
+        comb = comb[,c(1, 2, 6, 4, 8)]
+        
+        
+        output$ae_dt <- renderDataTable({datatable(comb, selection = "none", options = list(
+            lengthMenu = list(c(10, 25, 50, -1), c("10", "25", "50", "All")),
+            # autoWidth = TRUE,
+            # scrollX = TRUE,
+            scrollY = '350px')
+        )})
+        
+        output$subs_csv<- downloadHandler(
+            filename = function(){
+                paste(input$sub1, " VS. ", barData$x, ".csv");
+            },
+            content = function(file){
+                write.csv(comb, file, row.names=FALSE)
+            }
+        )
+        output$subs_txt <- downloadHandler(
+            filename = function(){
+                paste(input$sub1, " VS. ", barData$x, ".txt");
+            },
+            content = function(file){
+                write.table(comb, file, row.names=FALSE)
+            }
+        )
+        output$subs_xlsx <- downloadHandler(
+            filename = function(){
+                paste(input$sub1, " VS. ", barData$x, ".xlsx");
+            },
+            content = function(file){
+                write_xlsx(comb, path=file)
+            }
+        )
+        
+        showModal(modalDialog(
+            size = "l",
+            title = paste(toTitleCase(tolower(barData$x)), "vs. ", toTitleCase(tolower(input$sub1)), " (r=", round(barData$y, digits=2), ")"),
+            div(style="display: inline-block; float: right", downloadButton("subs_csv", "CSV")),
+            " ",
+            div(style="display: inline-block; float: right", downloadButton("subs_txt", "TXT")),
+            div(style="display: inline-block; float: right", downloadButton("subs_xlsx", "XLSX")),
+            tags$br(),
+            tags$br(),
+            DT::dataTableOutput("ae_dt")
+        ));
+    })
+    
+    # ---------------------------------------------- box 2, 3-----------------------------------------------------
     output$download_csv2 <- downloadHandler(
         filename = function(){
             paste(input$ycol2, " vs. ", input$xcol2, ".csv");
