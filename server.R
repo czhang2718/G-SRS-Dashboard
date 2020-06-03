@@ -226,32 +226,36 @@ function(input, output, session) {
     
     observeEvent(input$class_l1, {
         if(length(input$class_l1) == 0){
-            curr_level = 0;
+            curr_level(0);
         }
+        else curr_level(1);
         rerender();
     })
     observeEvent(input$class_l2, {
         if(length(input$class_l2) == 0){
-            curr_level = 1;
+            curr_level(1);
         }
+        else curr_level(2);
         rerender();
     })
     observeEvent(input$class_l3, {
         if(length(input$class_l3) == 0){
-            curr_level = 2;
+            curr_level(2);
         }
+        else curr_level(3);
         rerender();
     })
     observeEvent(input$class_l4, {
         if(length(input$class_l4) == 0){
-            curr_level = 3;
+            curr_level(3);
         }
+        else curr_level(4);
         rerender();
     })
     
     # apply filtering on "filter" button
     observeEvent(input$filt, {
-        rerender();
+        # rerender();
         pts$data = pts_temp$data;
         toggleModal(session, "filter", toggle="close");
     })
