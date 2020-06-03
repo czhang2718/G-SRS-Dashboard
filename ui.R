@@ -117,13 +117,13 @@ dashboardPage(
                                             actionLink("classes", "Filter"),    
                                             bsModal("filter", "Filter Observations", trigger = "classes", size = "large", 
                                                     tags$div(
-                                                        style="display: block; float: left",
+                                                        # style="display: block; float: left",
                                                         h5("Restrictions on Substance Observations"),
                                                         sliderInput(inputId="casecount_box1",label="Minimum Case Count",min=100,max=50000,value=1000),
                                                         sliderInput(inputId="ptcount_box1",label="Minimum Adverse Event Count",min=5,max=100,value=10)
                                                     ),
                                                     tags$div(
-                                                        style="display: block; float: right",
+                                                        # style="display: block; float: right",
                                                         h5("Filter Substances by ATC Classification"),
                                                         uiOutput("class1"),
                                                         uiOutput("class2"),
@@ -142,20 +142,6 @@ dashboardPage(
                     
             ),
             tabItem("compare_subs",
-                    fluidRow(
-                        box(title = "Compare multiple substances", width = 12, collapsible = TRUE,
-                            selectizeInput("sub1", "Substance", vars2, width = "100%",  selected = vars2[4], options = list(maxOptions=2500)),
-                            # other_ae --> sub2
-                            selectizeInput("sub2", "Compare With:", vars2, width = "100%", options = list(maxOptions=2500), multiple = TRUE),
-                            span("Showing correlations for adverse events with >="),
-                            div(style="display: inline-block;", numericInput("num_subs", label = NULL, value = 5, width = "55px", min=2, max=1000)),
-                            span("correlated substances. "),
-                            "Minimum adverse event count: ",
-                            div(style="display: inline-block;", numericInput("min_ae", label = NULL, value = 10, width = "55px", min=5, max=100)),
-                            plotlyOutput("subs_bar")
-                        ),
-                    ),
-                    
                     fluidRow(
                         column(width=4,
                            box(title = "Selectors", status = "success", solidHeader = TRUE, width=NULL,
@@ -190,6 +176,17 @@ dashboardPage(
                                         div(style="display: inline-block; float: right", downloadButton("download_csv2", "CSV")),
                                         tags$br(), tags$br(),
                                         DTOutput("table2")
+                               ),
+                               tabPanel(title = "Multiple Selection", width = "100%",
+                                        selectizeInput("sub1", "Substance", vars2, width = "100%",  selected = vars2[4], options = list(maxOptions=2500)),
+                                        # other_ae --> sub2
+                                        selectizeInput("sub2", "Compare With:", vars2, width = "100%", options = list(maxOptions=2500), multiple = TRUE),
+                                        span("Showing correlations for adverse events with >="),
+                                        div(style="display: inline-block;", numericInput("num_subs", label = NULL, value = 5, width = "55px", min=2, max=1000)),
+                                        span("correlated substances. "),
+                                        "Minimum adverse event count: ",
+                                        div(style="display: inline-block;", numericInput("min_ae", label = NULL, value = 10, width = "55px", min=5, max=100)),
+                                        plotlyOutput("subs_bar")
                                )
                            )
                     )
