@@ -24,7 +24,7 @@ dashboardPage(
             tabItem("intro",
                     fluidRow(
                       column(width = 12,
-                             selectizeInput("intro_drug", "Select Medical Drug", vars2, multiple=FALSE, width="100%")
+                             selectizeInput("intro_drug", "Select Medical Drug", vars2, multiple=FALSE, width="100%", selected=vars2[2])
                              )  
                     ),
                     fluidRow(
@@ -33,10 +33,10 @@ dashboardPage(
                                fluidRow(
                                    column(width=12, 
                                           tags$div(id="pie-div", box(id= "intro-pie", title = "Pie", width = NULL, status="warning",
-                                              plotlyOutput("pie_chart"))
+                                              solidHeader = TRUE, plotlyOutput("pie_chart"))
                                               )),
-                                   column(width=12, box(id="summary", title="Summary Table", width=NULL, status="primary",
-                                                        DTOutput("sum_table")))
+                                   column(width=12, tags$div(id="summary", box(title="Summary Table", width=NULL, status="primary",
+                                                    solidHeader=T, dataTableOutput("sum_table"))))
                                    
                                )
                         ),
@@ -46,7 +46,7 @@ dashboardPage(
                                    span(style="vertical-align: top",  "Sorted by "),
                                    div(style="display: inline-block; vertical-align: top", selectInput("sort_by", c("PT COUNT", "PRR"), 
                                         label = NULL, selected="PT COUNT", multiple=FALSE, width = "110px")),
-                                   div(style="max-height: 530px; overflow-y: scroll; position: relative", plotlyOutput("top_ae"))
+                                   div(id="aebar", style="overflow-y: scroll; position: relative", plotlyOutput("top_ae"))
                                    )
                         )
                         
