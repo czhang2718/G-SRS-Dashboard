@@ -18,52 +18,59 @@ function(input, output, session) {
     #right-side horizontal bar chart
     output$top_ae <- renderPlotly({
         aes = dset[which(dset$INAME == input$intro_drug), c(3, 7, 11)];
+        validate(
+            need(nrow(aes)>0, "No Data Available")
+        )
         if(input$sort_by == "PT COUNT"){
-            plot_ly(aes, x=~PT_COUNT, y=~reorder(PT_TERM, PT_COUNT), type = "bar", orientation = "h", height = 500+ 11*nrow(aes), color = I("orange")) %>%
-                layout(showlegend = FALSE, yaxis = list(title="", automargin = TRUE)) %>%
+            plot_ly(aes, x=~PT_COUNT, y=~reorder(PT_TERM, PT_COUNT), type = "bar", orientation = "h", height = 520 + 10*nrow(aes), 
+                    color = I("orange"), source = "C") %>%
+                layout(showlegend = FALSE, autosize=FALSE, yaxis = list(title="", automargin = TRUE), xaxis = list(automargin=TRUE)) %>%
                 plotly::config(displaylogo = FALSE)
         }
         else {
-            plot_ly(aes, x=~PRR, y=~reorder(PT_TERM, PRR), type = "bar", orientation = "h", height = 500+ 11*nrow(aes)) %>%
-                layout(showlegend = FALSE, yaxis = list(title="", automargin = TRUE)) %>%
+            plot_ly(aes, x=~PRR, y=~reorder(PT_TERM, PRR), type = "bar", orientation = "h", height = 520 + 10*nrow(aes), 
+                    source = "D") %>%
+                layout(showlegend = FALSE, autosize=FALSE, yaxis = list(title="", automargin = TRUE)) %>%
                 plotly::config(displaylogo = FALSE)
         }
     })
     
     #pie
     output$pie_chart <- renderPlotly({
-        total_rows = nrow(dset[which(dset$INAME==input$intro_drug),]);
+        total_rows = nrow(dset[which(dset$INAME==input$intro_drug),])
         validate(
             need(total_rows>0, "No Data Available")
         )
-        g1 = nrow(dset[which(dset$INAME==input$intro_drug & dset$PRR<1),]);
-        g2 = nrow(dset[which(dset$INAME==input$intro_drug & dset$PRR>=1 & dset$PRR<5),]);
-        g3 = nrow(dset[which(dset$INAME==input$intro_drug & dset$PRR>=5 & dset$PRR<10),]);
-        g4 = nrow(dset[which(dset$INAME==input$intro_drug & dset$PRR>=10 & dset$PRR<100),]);
-        g5 = nrow(dset[which(dset$INAME==input$intro_drug & dset$PRR>=100),]);
-        df <- data.frame("label"=c("<1", "1-5", "5-10", "10-100", ">100"), "vals" = c(g1, g2, g3, g4, g5));
-        plot_ly(df, labels=~label, values=~vals, type="pie");
+        g1 = nrow(dset[which(dset$INAME==input$intro_drug & dset$PRR<1),])
+        g2 = nrow(dset[which(dset$INAME==input$intro_drug & dset$PRR>=1 & dset$PRR<5),])
+        g3 = nrow(dset[which(dset$INAME==input$intro_drug & dset$PRR>=5 & dset$PRR<10),])
+        g4 = nrow(dset[which(dset$INAME==input$intro_drug & dset$PRR>=10 & dset$PRR<100),])
+        g5 = nrow(dset[which(dset$INAME==input$intro_drug & dset$PRR>=100),])
+        df <- data.frame("label"=c("<1", "1-5", "5-10", "10-100", ">100"), "vals" = c(g1, g2, g3, g4, g5))
+        plot_ly(df, labels=~label, values=~vals, type="pie", source="E") %>%
+            plotly::config(displaylogo = FALSE)
     })
     
     #summary table
     output$sum_table <- renderDataTable({
-        #mean, median, standard deviation, count, iqr
-        dat1 <- dset$PRR[which(dset$INAME==input$intro_drug)];
-        mean_prr = mean(dat1);
-        median_prr = median(dat1);
-        sd_prr = sd(dat1);
-        iqr_prr = IQR(dat1);
         
-        dat2 <- dset$PT_COUNT[which(dset$INAME==input$intro_drug)];
-        mean_count = mean(dat2);
-        median_count = median(dat2);
-        sd_count = sd(dat2);
-        iqr_count = IQR(dat2);
+        #mean, median, standard deviation, count, iqr
+        dat1 <- dset$PRR[which(dset$INAME==input$intro_drug)]
+        mean_prr = round(mean(dat1), 2)
+        median_prr = round(median(dat1), 2)
+        sd_prr = round(sd(dat1), 2)
+        iqr_prr = round(IQR(dat1), 2)
+        
+        dat2 <- dset$PT_COUNT[which(dset$INAME==input$intro_drug)]
+        mean_count = round(mean(dat2), 2)
+        median_count = round(median(dat2), 2)
+        sd_count = round(sd(dat2), 2)
+        iqr_count = round(IQR(dat2), 2)
         df <- cbind(data.frame("1" =c("PRR", "Count"), "2"=c(mean_prr, mean_count), "3"=c(median_prr, median_count),
                     "4" = c(sd_prr, sd_count), "5"=c(iqr_prr, iqr_count)));
-        colnames(df) = c(input$intro_drug, "Mean", "Median", "Standard Deviation", "Interquartile Range");
+        colnames(df) = c(input$intro_drug, "Mean", "Median", "Standard Deviation", "Interquartile Range")
         
-        dt <- datatable(df, rownames = FALSE, options = list(dom = 't', autoWidth=FALSE));
+        dt <- datatable(df, rownames = FALSE, options = list(dom = 't', autoWidth=F, scrollX=T))
         dt
     })
     
