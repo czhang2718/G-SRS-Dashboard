@@ -22,6 +22,7 @@ dashboardPage(
         tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
         tabItems(
             tabItem("intro",
+                    h1("G-SRS Data Explorer", align="center"),
                     fluidRow(
                       column(width = 12,
                              selectizeInput("intro_drug", "Select Medical Drug", vars2, multiple=FALSE, width="100%", selected=vars2[2])
@@ -32,7 +33,7 @@ dashboardPage(
                         column(width = 7,
                                fluidRow(
                                    column(width=12, 
-                                          tags$div(id="pie-div", box(id= "intro-pie", title = "Pie", width = NULL, status="warning",
+                                          tags$div(id="pie-div", box(id= "intro-pie", width = NULL, status="warning",
                                               solidHeader = TRUE, plotlyOutput("pie_chart"))
                                               )),
                                    column(width=12, tags$div(id="summary", box(title="Summary Table", width=NULL, status="primary",
@@ -42,7 +43,7 @@ dashboardPage(
                         ),
                         
                         column(width = 5,
-                               box(id= "intro-box", title = "Drug - Adverse Event", width = NULL, 
+                               box(id= "intro-box", title = "Adverse Events", width = NULL, 
                                    span(style="vertical-align: top",  "Sorted by "),
                                    div(style="display: inline-block; vertical-align: top", selectInput("sort_by", c("PT COUNT", "PRR"), 
                                         label = NULL, selected="PT COUNT", multiple=FALSE, width = "110px")),
