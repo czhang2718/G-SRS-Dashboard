@@ -15,23 +15,23 @@ function(input, output, session) {
     
     # ------------------------------------------------INTRO PG--------------------------------------------------
     
-    #right-side horizontal bar chart
+    #right-side vertical bar chart
     output$top_ae <- renderPlotly({
         aes = dset[which(dset$INAME == input$intro_drug), c(3, 7, 11)];
         validate(
             need(nrow(aes)>0, "No Data Available")
         )
         if(input$sort_by == "PT COUNT"){
-            plot_ly(aes, x=~PT_COUNT, y=~reorder(PT_TERM, PT_COUNT), type = "bar", orientation = "h", height = 520 + 10*nrow(aes), 
+            plot_ly(aes, x=~PT_COUNT, y=~reorder(PT_TERM, PT_COUNT),type = "bar", orientation = "h", height = max(50*nrow(aes), 400),
                     color = I("orange"), source = "C") %>%
-                layout(showlegend = FALSE, autosize=FALSE, yaxis = list(title="", automargin = TRUE), xaxis = list(automargin=TRUE)) %>%
-                plotly::config(displaylogo = FALSE)
+                layout(showlegend = FALSE, autosize=FALSE, yaxis = list(title="", automargin = TRUE), xaxis = list(automargin=TRUE, side="top")) %>%
+                plotly::config(modeBarButtonsToRemove = c("zoomIn2d", "zoomOut2d", "displaylogo", "zoom2d", "hoverClosestGl2d", "pan2d"))
         }
         else {
-            plot_ly(aes, x=~PRR, y=~reorder(PT_TERM, PRR), type = "bar", orientation = "h", height = 520 + 10*nrow(aes), 
+            plot_ly(aes, x=~PRR, y=~reorder(PT_TERM, PRR), type = "bar", orientation = "h", height = max(50*nrow(aes), 400), 
                     source = "D") %>%
                 layout(showlegend = FALSE, autosize=FALSE, yaxis = list(title="", automargin = TRUE)) %>%
-                plotly::config(displaylogo = FALSE)
+                plotly::config(modeBarButtonsToRemove = c("zoomIn2d", "zoomOut2d", "displaylogo", "zoom2d", "hoverClosestGl2d", "pan2d"))
         }
     })
     
@@ -56,19 +56,29 @@ function(input, output, session) {
         
         #mean, median, standard deviation, count, iqr
         dat1 <- dset$PRR[which(dset$INAME==input$intro_drug)]
-        mean_prr = round(mean(dat1), 2)
+        q1_prr <- round(quantile(dat1)[2], 2)
         median_prr = round(median(dat1), 2)
+        q3_prr <- round(quantile(dat1)[4], 2)
+        mean_prr = round(mean(dat1), 2)
         sd_prr = round(sd(dat1), 2)
         iqr_prr = round(IQR(dat1), 2)
         
         dat2 <- dset$PT_COUNT[which(dset$INAME==input$intro_drug)]
-        mean_count = round(mean(dat2), 2)
+        q1_cnt <- round(quantile(dat2)[2], 2)
         median_count = round(median(dat2), 2)
+        q3_cnt <- round(quantile(dat2)[4], 2)
+        mean_count = round(mean(dat2), 2)
         sd_count = round(sd(dat2), 2)
         iqr_count = round(IQR(dat2), 2)
-        df <- cbind(data.frame("1" =c("PRR", "Count"), "2"=c(mean_prr, mean_count), "3"=c(median_prr, median_count),
-                    "4" = c(sd_prr, sd_count), "5"=c(iqr_prr, iqr_count)));
-        colnames(df) = c(input$intro_drug, "Mean", "Median", "Standard Deviation", "Interquartile Range")
+        df <- cbind(data.frame("1" =c("PRR", "Count"), "2" = c(q1_prr, q1_cnt), "3"=c(median_prr, median_count), "4" = c(q3_prr, q3_cnt), "5"=c(mean_prr, mean_count), 
+                    "6" = c(sd_prr, sd_count)));
+        if(length(dat1)>0){
+            n=dset$CASE_COUNT[which(dset$INAME==input$intro_drug)][1]
+        }
+        else{
+            n=0
+        }
+        colnames(df) = c(paste0(input$intro_drug, " (N=", n, ")"), "Q1", "Median", "Q3", "Mean", "Standard Deviation")
         
         dt <- datatable(df, rownames = FALSE, options = list(dom = 't', autoWidth=F, scrollX=T))
         dt
