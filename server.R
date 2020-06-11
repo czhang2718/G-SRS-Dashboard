@@ -22,15 +22,15 @@ function(input, output, session) {
             need(nrow(aes)>0, "No Data Available")
         )
         if(input$sort_by == "PT COUNT"){
-            plot_ly(aes, x=~PT_COUNT, y=~reorder(PT_TERM, PT_COUNT),type = "bar", orientation = "h", height = max(50*nrow(aes), 400),
+            plot_ly(aes, x=~PT_COUNT, y=~reorder(PT_TERM, PT_COUNT),type = "bar", orientation = "h", height = max(30*nrow(aes), 400),
                     color = I("orange"), source = "C") %>%
-                layout(showlegend = FALSE, autosize=FALSE, yaxis = list(title="", automargin = TRUE), xaxis = list(automargin=TRUE, side="top")) %>%
+                layout(bargap=.1, showlegend = FALSE, autosize=TRUE, yaxis = list(title="", automargin = TRUE), xaxis = list(automargin=TRUE, side="top")) %>%
                 plotly::config(modeBarButtonsToRemove = c("zoomIn2d", "zoomOut2d", "displaylogo", "zoom2d", "hoverClosestGl2d", "pan2d"))
         }
         else {
-            plot_ly(aes, x=~PRR, y=~reorder(PT_TERM, PRR), type = "bar", orientation = "h", height = max(50*nrow(aes), 400), 
-                    source = "D") %>%
-                layout(showlegend = FALSE, autosize=FALSE, yaxis = list(title="", automargin = TRUE)) %>%
+            plot_ly(aes, x=~PRR, y=~reorder(PT_TERM, PRR), type = "bar", orientation = "h", height = max(30*nrow(aes), 400), 
+                    source = "D", stroke=I('black')) %>%
+                layout(bargap=0, showlegend = FALSE, autosize=FALSE, yaxis = list(title="", automargin = TRUE)) %>%
                 plotly::config(modeBarButtonsToRemove = c("zoomIn2d", "zoomOut2d", "displaylogo", "zoom2d", "hoverClosestGl2d", "pan2d"))
         }
     })
