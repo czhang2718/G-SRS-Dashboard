@@ -116,23 +116,27 @@ dashboardPage(
                                             span("Number of Observations \u2265"),
                                             div(style="display: inline-block;", numericInput("num_obs", label = NULL, value = 5, width = "55px", min=1, max=1000)),
                                             actionLink("classes", "Filter"),    
-                                            bsModal("filter", "Filter Observations", trigger = "classes", size = "large", 
-                                                    tags$div(
-                                                        # style="display: block; float: left",
+                                            bsModal("filter", "Filter Observations", trigger = "classes", size = "large", splitLayout(cellArgs = list(style = "padding-left: 60px"),
+                                                        tags$div(
                                                         h5("Restrictions on Substance Observations"),
                                                         sliderInput(inputId="casecount_box1",label="Minimum Case Count",min=100,max=50000,value=1000),
+                                                        tags$br(),
                                                         sliderInput(inputId="ptcount_box1",label="Minimum Adverse Event Count",min=5,max=100,value=10)
                                                     ),
                                                     tags$div(
-                                                        # style="display: block; float: right",
                                                         h5("Filter Substances by ATC Classification"),
                                                         uiOutput("class1"),
                                                         uiOutput("class2"),
                                                         uiOutput("class3"),
                                                         uiOutput("class4"),
-                                                        actionButton("filt", "Filter"),
-                                                        tags$head(tags$style("#filter .modal-footer{ display:none}"))
                                                     )
+                                                ),
+                                                tags$div(align="center", actionButton("filt", "Filter"), tags$div(actionButton("reset", "Reset"), style="display:inline-block; 
+                                                padding:0.3em 1.2emmargin:0 0.1em 0.1em 0; border:0.16em solid rgba(255,255,255,0); border-radius:2em; 
+                                                box-sizing: border-box; text-decoration:none; font-family:'Roboto',sans-serif; font-weight:300; color:#FFFFFF; 
+                                                text-shadow: 0 0.04em 0.04em rgba(0,0,0,0.35); text-align:center; transition: all 0.2s")),
+                                                tags$head(tags$style("#reset .modal-footer{ display:none; margin: auto}")),
+                                                tags$head(tags$style("#filter .modal-footer{ display:none; margin: auto}")),
                                             ),
                                             plotlyOutput("single_ae1")
                                         )
