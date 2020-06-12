@@ -10,6 +10,7 @@ library(dplyr)
 library(writexl)
 library(plotly)
 library(shinyBS)
+library(shinycssloaders)
 
 function(input, output, session) {
     
@@ -268,6 +269,12 @@ function(input, output, session) {
         # rerender();
         pts$data = pts_temp$data;
         toggleModal(session, "filter", toggle="close");
+    })
+    
+    observeEvent(input$reset, {
+        curr_level(0)
+        rerender()
+        updateSelectInput(session, "class_l1", "Level 1 Class", atc_l1(), selected=NULL)
     })
     
     
