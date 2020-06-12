@@ -274,7 +274,11 @@ function(input, output, session) {
     observeEvent(input$reset, {
         curr_level(0)
         rerender()
-        updateSelectInput(session, "class_l1", "Level 1 Class", atc_l1(), selected=NULL)
+        pts$data = pts_temp$data;
+        if(!is.null(input$class_l1)) updateSelectInput(session, "class_l1", "Level 1 Class", atc_l1(), selected=NULL)
+        if(!is.null(input$class_l2)) updateSelectInput(session, "class_l2", "Level 2 Class", atc_l2(), selected=NULL)
+        if(!is.null(input$class_l3)) updateSelectInput(session, "class_l3", "Level 3 Class", atc_l3(), selected=NULL)
+        if(!is.null(input$class_l4)) updateSelectInput(session, "class_l4", "Level 4 Class", atc_l4(), selected=NULL)
     })
     
     
@@ -296,8 +300,7 @@ function(input, output, session) {
             pt2 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, L2_PRR, ATC1, ATC2, ATC3, ATC4),
                           subset = (PT_TERM == new_ae & CASE_COUNT>input$casecount_box1 & PT_COUNT>input$ptcount_box1))
             comb = merge(pt1, pt2, by="INAME") %>% distinct()
-            if(length(comb$INAME) < input$num_obs){ }
-            else{
+            if(length(comb$INAME) >= input$num_obs){
                 pts$data = rbind(pts$data, data.frame(name = new_ae, cor = cor(comb$L2_PRR.x, comb$L2_PRR.y)));
                 atcs$data = rbind(atcs$data, data.frame(atc1 = comb$ATC1.x, atc2 = comb$ATC2.x, atc3 = comb$ATC3.x, atc4 = comb$ATC4.x));
             }
@@ -309,8 +312,9 @@ function(input, output, session) {
     })
     
     observeEvent(input$num_obs, {
-        rerender();
-        pts$data = pts_temp$data;
+        print("recalculating with new num obs")
+        rerender()
+        pts$data = pts_temp$data
     })
     
     #----------------------------------------------------plot-------------------------------------------------------
@@ -706,9 +710,12 @@ function(input, output, session) {
     #actual plot
     
     output$subs_bar <- renderPlotly({
-        dat = subs$data;
-        plot_ly(dat, x = ~reorder(name, -cor), y = ~cor, type = "bar", color = ~cor>0, colors = c("#e82a2a", "#1b3fcf"), 
-                source = "B", name = ~ifelse(cor > 0, "> 0", "<= 0")) %>% 
+        dat = subs$data
+        validate(
+            need(nrow(dat)>0, "No Data Available")
+        )
+        plot_ly(dat, x = ~reorder(name, -cor), y = ~round(cor, digits = 3), type = "bar", color = ~cor>0, colors = c("#e82a2a", "#1b3fcf"), 
+                source = "B", name = "<extra><extra>") %>% 
             layout(
                 xaxis = list(title = "Substance"),
                 yaxis = list(title = "Correlation"),
