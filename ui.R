@@ -144,7 +144,7 @@ dashboardPage(
                                                 tags$head(tags$style("#reset:hover { background-color: #8f8f8f}")),
                                                 tags$head(tags$style("#filt:hover { background-color:#45a340 }"))
                                             ),
-                                            plotlyOutput("single_ae1")
+                                            withSpinner(plotlyOutput("single_ae1"))
                                         )
                                    
                                )
@@ -197,7 +197,7 @@ dashboardPage(
                                         span("correlated substances. "),
                                         "Minimum adverse event count: ",
                                         div(style="display: inline-block;", numericInput("min_ae", label = NULL, value = 10, width = "55px", min=5, max=100)),
-                                        plotlyOutput("subs_bar")
+                                        withSpinner(plotlyOutput("subs_bar"))
                                )
                            )
                     )
