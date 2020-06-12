@@ -6,6 +6,7 @@ library(shinydashboard)
 library(xml2)
 library(plotly)
 library(shinyBS)
+library(shinycssloaders)
 
 # PAGE 1
 dashboardPage(
@@ -131,12 +132,17 @@ dashboardPage(
                                                         uiOutput("class4"),
                                                     )
                                                 ),
-                                                tags$div(align="center", actionButton("filt", "Filter"), tags$div(actionButton("reset", "Reset"), style="display:inline-block; 
-                                                padding:0.3em 1.2emmargin:0 0.1em 0.1em 0; border:0.16em solid rgba(255,255,255,0); border-radius:2em; 
-                                                box-sizing: border-box; text-decoration:none; font-family:'Roboto',sans-serif; font-weight:300; color:#FFFFFF; 
-                                                text-shadow: 0 0.04em 0.04em rgba(0,0,0,0.35); text-align:center; transition: all 0.2s")),
+                                                tags$div(align="center", actionButton("filt", "Filter"), actionButton("reset", "Reset")),
                                                 tags$head(tags$style("#reset .modal-footer{ display:none; margin: auto}")),
                                                 tags$head(tags$style("#filter .modal-footer{ display:none; margin: auto}")),
+                                                tags$head(tags$style("#filt {display:inline-block; padding:0.3em 1.2em; margin:0 0.1em 0.1em 0; border:0.16em solid rgba(255,255,255,0);  
+                                                box-sizing: border-box; text-decoration:none; font-family:'Roboto',sans-serif; font-weight:300; color:#FFFFFF; 
+                                                text-shadow: 0 0.04em 0.04em rgba(0,0,0,0.35); text-align:center; background-color:#55c24f}")),
+                                                tags$head(tags$style("#reset {display:inline-block; padding:0.3em 1.2em; margin:0 0.1em 0.1em 0; border:0.16em solid rgba(255,255,255,0); 
+                                                box-sizing: border-box; text-decoration:none; font-family:'Roboto',sans-serif; font-weight:300; color:#FFFFFF; 
+                                                text-shadow: 0 0.04em 0.04em rgba(0,0,0,0.35); text-align:center; background-color:#bdbdbd}")),
+                                                tags$head(tags$style("#reset:hover { background-color: #8f8f8f}")),
+                                                tags$head(tags$style("#filt:hover { background-color:#45a340 }"))
                                             ),
                                             plotlyOutput("single_ae1")
                                         )
