@@ -12,6 +12,7 @@ library(plotly)
 library(shinyBS)
 library(shinycssloaders)
 library(formattable)
+library(tinytex)
 
 function(input, output, session) {
     
