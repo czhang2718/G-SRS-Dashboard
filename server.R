@@ -12,7 +12,7 @@ library(plotly)
 library(shinyBS)
 library(shinycssloaders)
 library(formattable)
-library(tinytex)
+library(tinytex) # <- formattable dependency
 
 function(input, output, session) {
     
@@ -52,6 +52,9 @@ function(input, output, session) {
     #pop up formattable dt on maximize button
     observeEvent(input$popdt, {
         aes = dset[which(dset$INAME == input$intro_drug), c(3, 7, 11)]
+        if(nrow(aes)==0){
+            showNotification("Not enough data available", type="warning")
+        }
         validate(
             need(nrow(aes)>0, "No Data Available")
         )
@@ -74,11 +77,9 @@ function(input, output, session) {
             size = "l",
             easyClose = TRUE,
             title=paste0(toTitleCase(tolower(input$intro_drug)), "-related Adverse Events"),
-            renderFormattable({formattable(df, align = c("l",rep("r", ncol(df) - 1)),
+            div(renderFormattable({formattable(df, align = c("l",rep("r", ncol(df) - 1)),
                                            list(Count=my_color_bar(color="#ffbc42",width = 110), PRR=my_color_bar(color="#349be3",width = 110))
-            )}),
-            
-            #div style = overflow y
+            )}), style="max-height: 500px; overflow-y: scroll")
         ))
         
     })
