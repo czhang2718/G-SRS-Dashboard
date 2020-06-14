@@ -8,6 +8,7 @@ library(plotly)
 library(shinyBS)
 library(shinycssloaders)
 library(formattable)
+library(tinytex)
 
 # PAGE 1
 dashboardPage(
