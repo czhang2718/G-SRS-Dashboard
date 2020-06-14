@@ -11,6 +11,7 @@ library(writexl)
 library(plotly)
 library(shinyBS)
 library(shinycssloaders)
+library(formattable)
 
 function(input, output, session) {
     
@@ -18,6 +19,7 @@ function(input, output, session) {
     
     #right-side vertical bar chart
     output$top_ae <- renderPlotly({
+        #adverse events
         aes = dset[which(dset$INAME == input$intro_drug), c(3, 7, 11)];
         validate(
             need(nrow(aes)>0, "No Data Available")
@@ -30,10 +32,54 @@ function(input, output, session) {
         }
         else {
             plot_ly(aes, x=~PRR, y=~reorder(PT_TERM, PRR), type = "bar", orientation = "h", height = max(30*nrow(aes), 400), 
-                    source = "D", stroke=I('black')) %>%
-                layout(bargap=0, showlegend = FALSE, autosize=FALSE, yaxis = list(title="", automargin = TRUE)) %>%
+                    source = "D") %>%
+                layout(bargap=.1, showlegend = FALSE, autosize=TRUE, yaxis = list(title="", automargin = TRUE)) %>%
                 plotly::config(modeBarButtonsToRemove = c("zoomIn2d", "zoomOut2d", "displaylogo", "zoom2d", "hoverClosestGl2d", "pan2d"))
         }
+    })
+    
+    # custon color bar
+    my_color_bar <- function (color = "orange", fixedWidth=110,...) 
+    {
+        formatter("span", style = function(x) style(display = "inline-block", 
+                                                    direction = "rtl", `border-radius` = "4px", `padding-right` = "2px", 
+                                                    `background-color` = csscolor(color), width = paste(fixedWidth*proportion(x),"px",sep=""), 
+                                                    ...))
+    }
+    
+    
+    #pop up formattable dt on maximize button
+    observeEvent(input$popdt, {
+        aes = dset[which(dset$INAME == input$intro_drug), c(3, 7, 11)]
+        validate(
+            need(nrow(aes)>0, "No Data Available")
+        )
+        aes$PT_COUNT = round(aes$PT_COUNT, 2)
+        aes$PRR = round(aes$PRR, 2)
+        
+        if(input$sort_by=="PT COUNT"){
+            aes <- aes[order(-aes$PT_COUNT),]
+            df <- data.frame(ae=aes$PT_TERM, count=aes$PT_COUNT, prr=aes$PRR)
+            colnames(df) <- c("Adverse Event", "Count", "PRR")
+        }
+        
+        else{
+            aes <- aes[order(-aes$PRR),]
+            df <- data.frame(ae=aes$PT_TERM, count=aes$PT_COUNT, prr=aes$PRR)
+            colnames(df) <- c("Adverse Event", "Count", "PRR")
+        }
+        
+        showModal(modalDialog(
+            size = "l",
+            easyClose = TRUE,
+            title=paste0(toTitleCase(tolower(input$intro_drug)), "-related Adverse Events"),
+            renderFormattable({formattable(df, align = c("l",rep("r", ncol(df) - 1)),
+                                           list(Count=my_color_bar(color="#ffbc42",width = 110), PRR=my_color_bar(color="#349be3",width = 110))
+            )}),
+            
+            #div style = overflow y
+        ))
+        
     })
     
     #pie
@@ -136,9 +182,8 @@ function(input, output, session) {
         
         showModal(modalDialog(
             size = "l",
-            title = paste(toTitleCase(tolower(barData$x)), "vs. ", toTitleCase(tolower(input$ae1)), " (r=", round(barData$y, digits=2), ")"),
+            title = paste0(toTitleCase(tolower(barData$x)), " vs.", toTitleCase(tolower(input$ae1)), " (r = ", round(barData$y, digits=2), ")"),
             div(style="display: inline-block; float: right", downloadButton("mult_comp_csv", "CSV")),
-            " ",
             div(style="display: inline-block; float: right", downloadButton("mult_comp_txt", "TXT")),
             div(style="display: inline-block; float: right", downloadButton("mult_comp_xlsx", "XLSX")),
             tags$br(),
@@ -312,7 +357,6 @@ function(input, output, session) {
     })
     
     observeEvent(input$num_obs, {
-        print("recalculating with new num obs")
         rerender()
         pts$data = pts_temp$data
     })
