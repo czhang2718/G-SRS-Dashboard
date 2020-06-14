@@ -8,7 +8,7 @@ library(plotly)
 library(shinyBS)
 library(shinycssloaders)
 library(formattable)
-library(tinytex)
+library(tinytex) # <- formattable dependency
 
 # PAGE 1
 dashboardPage(
@@ -47,10 +47,9 @@ dashboardPage(
                         
                         column(width = 5,
                                box(id= "intro-box", title = "Adverse Events", width = NULL, 
-                                   span(style="vertical-align: top",  "Sorted by "),
-                                   div(style="display: inline-block; vertical-align: top", selectInput("sort_by", c("PT COUNT", "PRR"), 
-                                        label = NULL, selected="PT COUNT", multiple=FALSE, width = "110px")),
-                                   actionButton("popdt", "", icon = icon("fas fa-expand-arrows-alt")),
+                                   div(style="display: inline-block;", selectInput("sort_by", c("PT COUNT", "PRR"), 
+                                        label = "Sort by", selected="PT COUNT", multiple=FALSE, width = "110px")),
+                                   actionButton("popdt", "", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: right"),
                                    div(id="aebar", style="overflow-y: scroll; position: relative", plotlyOutput("top_ae"))
                                    )
                         )
