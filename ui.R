@@ -9,6 +9,7 @@ library(shinyBS)
 library(shinycssloaders)
 library(formattable)
 library(tinytex) # <- formattable dependency
+library(dplyr)
 
 # PAGE 1
 dashboardPage(
@@ -17,7 +18,8 @@ dashboardPage(
         sidebarMenu(
             menuItem("Introduction", tabName="intro"),
             menuItem("Compare Adverse Events", tabName="compare_ae"),
-            menuItem("Compare Substances", tabName = "compare_subs")
+            menuItem("Compare Substances", tabName = "compare_subs"),
+            menuItem("Class Comparison", tabName="class_comp")
         )
     ),
     dashboardBody(
@@ -27,9 +29,9 @@ dashboardPage(
             tabItem("intro",
                     h1("G-SRS Data Explorer", align="center"),
                     fluidRow(
-                      column(width = 12,
-                             selectizeInput("intro_drug", "Select Medical Drug", vars2, multiple=FALSE, width="100%", selected=vars2[2])
-                             )  
+                        column(width = 12,
+                               selectInput("intro_drug", "Select Medical Drug", vars2, multiple=FALSE, width="100%", selected=vars2[2])
+                        )  
                     ),
                     fluidRow(
                         
@@ -37,10 +39,10 @@ dashboardPage(
                                fluidRow(
                                    column(width=12, 
                                           tags$div(id="pie-div", box(id= "intro-pie", width = NULL, status="warning",
-                                              solidHeader = TRUE, plotlyOutput("pie_chart"))
-                                              )),
+                                                                     solidHeader = TRUE, plotlyOutput("pie_chart"))
+                                          )),
                                    column(width=12, tags$div(id="summary", box(title="Summary Table", width=NULL, status="primary",
-                                                    solidHeader=T, dataTableOutput("sum_table"))))
+                                                                               solidHeader=T, dataTableOutput("sum_table"))))
                                    
                                )
                         ),
@@ -48,10 +50,10 @@ dashboardPage(
                         column(width = 5,
                                box(id= "intro-box", title = "Adverse Events", width = NULL, 
                                    div(style="display: inline-block;", selectInput("sort_by", c("PT COUNT", "PRR"), 
-                                        label = "Sort by", selected="PT COUNT", multiple=FALSE, width = "110px")),
+                                                                                   label = "Sort by", selected="PT COUNT", multiple=FALSE, width = "110px")),
                                    actionButton("popdt", "", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: right"),
                                    div(id="aebar", style="overflow-y: scroll; position: relative", plotlyOutput("top_ae"))
-                                   )
+                               )
                         )
                         
                     )
@@ -120,34 +122,34 @@ dashboardPage(
                                             div(style="display: inline-block;", numericInput("num_obs", label = NULL, value = 5, width = "55px", min=1, max=1000)),
                                             actionLink("classes", "Filter"),    
                                             bsModal("filter", "Filter Observations", trigger = "classes", size = "large", splitLayout(cellArgs = list(style = "padding-left: 60px"),
-                                                        tags$div(
-                                                        h5("Restrictions on Substance Observations"),
-                                                        sliderInput(inputId="casecount_box1",label="Minimum Case Count",min=100,max=50000,value=1000),
-                                                        tags$br(),
-                                                        sliderInput(inputId="ptcount_box1",label="Minimum Adverse Event Count",min=5,max=100,value=10)
-                                                    ),
-                                                    tags$div(
-                                                        h5("Filter Substances by ATC Classification"),
-                                                        uiOutput("class1"),
-                                                        uiOutput("class2"),
-                                                        uiOutput("class3"),
-                                                        uiOutput("class4"),
-                                                    )
-                                                ),
-                                                tags$div(align="center", actionButton("filt", "Filter"), actionButton("reset", "Reset")),
-                                                tags$head(tags$style("#reset .modal-footer{ display:none; margin: auto}")),
-                                                tags$head(tags$style("#filter .modal-footer{ display:none; margin: auto}")),
-                                                tags$head(tags$style("#filt {display:inline-block; padding:0.3em 1.2em; margin:0 0.1em 0.1em 0; border:0.16em solid rgba(255,255,255,0);  
+                                                                                                                                      tags$div(
+                                                                                                                                          h5("Restrictions on Substance Observations"),
+                                                                                                                                          sliderInput(inputId="casecount_box1",label="Minimum Case Count",min=100,max=50000,value=1000),
+                                                                                                                                          tags$br(),
+                                                                                                                                          sliderInput(inputId="ptcount_box1",label="Minimum Adverse Event Count",min=5,max=100,value=10)
+                                                                                                                                      ),
+                                                                                                                                      tags$div(
+                                                                                                                                          h5("Filter Substances by ATC Classification"),
+                                                                                                                                          uiOutput("class1"),
+                                                                                                                                          uiOutput("class2"),
+                                                                                                                                          uiOutput("class3"),
+                                                                                                                                          uiOutput("class4"),
+                                                                                                                                      )
+                                            ),
+                                            tags$div(align="center", actionButton("filt", "Filter"), actionButton("reset", "Reset")),
+                                            tags$head(tags$style("#reset .modal-footer{ display:none; margin: auto}")),
+                                            tags$head(tags$style("#filter .modal-footer{ display:none; margin: auto}")),
+                                            tags$head(tags$style("#filt {display:inline-block; padding:0.3em 1.2em; margin:0 0.1em 0.1em 0; border:0.16em solid rgba(255,255,255,0);  
                                                 box-sizing: border-box; text-decoration:none; font-family:'Roboto',sans-serif; font-weight:300; color:#FFFFFF; 
                                                 text-shadow: 0 0.04em 0.04em rgba(0,0,0,0.35); text-align:center; background-color:#55c24f}")),
-                                                tags$head(tags$style("#reset {display:inline-block; padding:0.3em 1.2em; margin:0 0.1em 0.1em 0; border:0.16em solid rgba(255,255,255,0); 
+                                            tags$head(tags$style("#reset {display:inline-block; padding:0.3em 1.2em; margin:0 0.1em 0.1em 0; border:0.16em solid rgba(255,255,255,0); 
                                                 box-sizing: border-box; text-decoration:none; font-family:'Roboto',sans-serif; font-weight:300; color:#FFFFFF; 
                                                 text-shadow: 0 0.04em 0.04em rgba(0,0,0,0.35); text-align:center; background-color:#bdbdbd}")),
-                                                tags$head(tags$style("#reset:hover { background-color: #8f8f8f}")),
-                                                tags$head(tags$style("#filt:hover { background-color:#45a340 }"))
+                                            tags$head(tags$style("#reset:hover { background-color: #8f8f8f}")),
+                                            tags$head(tags$style("#filt:hover { background-color:#45a340 }"))
                                             ),
                                             withSpinner(plotlyOutput("single_ae1"))
-                                        )
+                                   )
                                    
                                )
                         )
@@ -157,54 +159,79 @@ dashboardPage(
             tabItem("compare_subs",
                     fluidRow(
                         column(width=4,
-                           box(title = "Selectors", status = "success", solidHeader = TRUE, width=NULL,
-                               collapsible = TRUE,
-                               selectizeInput("xcol2","Substance x-axis",vars2,selected=vars2[2],multiple=FALSE,
-                                              options=list(maxOptions=2500)),
-                               selectizeInput("ycol2","Substance y-axis",vars2,selected=vars2[3],multiple=FALSE,
-                                              options=list(maxOptions=2500))),
-                           box(title="Restrictions", status="info", side="left", width=NULL,
-                               collapsible = TRUE,
-                               collapsed = TRUE,
-                               sliderInput(inputId="ptcount2",label="Adverse Event Count",min=5,max=100,value=10)
-                           )
-                    ),
-                    column(width=8,
-                           tabBox(
-                               title = "Correlate two substances",
-                               width=NULL,
-                               id = "tabset2",
-                               # height = "450px",
-                               tabPanel("Plot", div(
-                                   style = "position:relative",
-                                   plotOutput("scatterPlot2", hover = hoverOpts("plot_hover2")),
-                                   uiOutput("hover_coords"),
-                                   textOutput('cor2'),
-                                   tags$head(tags$style("#cor2{font-size: 16px; color: grey}"))
-                               )),
-                               
-                               tabPanel("Data Table", 
-                                        div(style="display: inline-block; float: right", downloadButton("download_xlsx2", "XLSX")),
-                                        div(style="display: inline-block; float: right", downloadButton("download_txt2", "TXT")),
-                                        div(style="display: inline-block; float: right", downloadButton("download_csv2", "CSV")),
-                                        tags$br(), tags$br(),
-                                        DTOutput("table2")
-                               ),
-                               tabPanel(title = "Multiple Selection", width = "100%",
-                                        selectizeInput("sub1", "Substance", vars2, width = "100%",  selected = vars2[4], options = list(maxOptions=2500)),
-                                        # other_ae --> sub2
-                                        selectizeInput("sub2", "Compare With:", vars2, width = "100%", options = list(maxOptions=2500), multiple = TRUE),
-                                        span("Showing correlations for adverse events with >="),
-                                        div(style="display: inline-block;", numericInput("num_subs", label = NULL, value = 5, width = "55px", min=2, max=1000)),
-                                        span("correlated substances. "),
-                                        "Minimum adverse event count: ",
-                                        div(style="display: inline-block;", numericInput("min_ae", label = NULL, value = 10, width = "55px", min=5, max=100)),
-                                        withSpinner(plotlyOutput("subs_bar"))
+                               box(title = "Selectors", status = "success", solidHeader = TRUE, width=NULL,
+                                   collapsible = TRUE,
+                                   selectizeInput("xcol2","Substance x-axis",vars2,selected=vars2[2],multiple=FALSE,
+                                                  options=list(maxOptions=2500)),
+                                   selectizeInput("ycol2","Substance y-axis",vars2,selected=vars2[3],multiple=FALSE,
+                                                  options=list(maxOptions=2500))),
+                               box(title="Restrictions", status="info", side="left", width=NULL,
+                                   collapsible = TRUE,
+                                   collapsed = TRUE,
+                                   sliderInput(inputId="ptcount2",label="Adverse Event Count",min=5,max=100,value=10)
                                )
-                           )
+                        ),
+                        column(width=8,
+                               tabBox(
+                                   title = "Correlate two substances",
+                                   width=NULL,
+                                   id = "tabset2",
+                                   # height = "450px",
+                                   tabPanel("Plot", div(
+                                       style = "position:relative",
+                                       plotOutput("scatterPlot2", hover = hoverOpts("plot_hover2")),
+                                       uiOutput("hover_coords"),
+                                       textOutput('cor2'),
+                                       tags$head(tags$style("#cor2{font-size: 16px; color: grey}"))
+                                   )),
+                                   
+                                   tabPanel("Data Table", 
+                                            div(style="display: inline-block; float: right", downloadButton("download_xlsx2", "XLSX")),
+                                            div(style="display: inline-block; float: right", downloadButton("download_txt2", "TXT")),
+                                            div(style="display: inline-block; float: right", downloadButton("download_csv2", "CSV")),
+                                            tags$br(), tags$br(),
+                                            DTOutput("table2")
+                                   ),
+                                   tabPanel(title = "Multiple Selection", width = "100%",
+                                            selectizeInput("sub1", "Substance", vars2, width = "100%",  selected = vars2[4], options = list(maxOptions=2500)),
+                                            # other_ae --> sub2
+                                            selectizeInput("sub2", "Compare With:", vars2, width = "100%", options = list(maxOptions=2500), multiple = TRUE),
+                                            span("Showing correlations for adverse events with >="),
+                                            div(style="display: inline-block;", numericInput("num_subs", label = NULL, value = 5, width = "55px", min=2, max=1000)),
+                                            span("correlated substances. "),
+                                            "Minimum adverse event count: ",
+                                            div(style="display: inline-block;", numericInput("min_ae", label = NULL, value = 10, width = "55px", min=5, max=100)),
+                                            withSpinner(plotlyOutput("subs_bar"))
+                                   )
+                               )
+                        )
+                        
                     )
-                    
-                )
+            ),
+            tabItem("class_comp",
+                    fluidRow(
+                        column(width=12, 
+                               tags$head(
+                               tags$style(HTML("
+                                  .selectize-input {
+                                    width:100%;
+                                  }
+                                "))
+                               ),
+                               div(style="line-height: 50%", div(style="display: inline-block; vertical-align:top; width:4%", 
+                                                                 selectInput("cc_level", "Level", c("1", "2", "3", "4"), multiple=FALSE, selected="1")),
+                               div(style="display: inline-block; vertical-align:top; width:95%", uiOutput("cc_1")), 
+                               p(" vs.", style="font-size: 18px; font-weight: bold; text-align: center"),
+                               div(style="display: inline-block; vertical-align:top; width:6%", 
+                                   selectInput("cc_type", "Type", c("Drug", "Class"), multiple=FALSE, selected="Drug")),
+                               div(style="display: inline-block; vertical-align:top; width:93%", uiOutput("cc_2")))
+                        )
+                    ),
+                    fluidRow(
+                        column(width=12,
+                               box(title="PRR Correlations", width=NULL, withSpinner(plotlyOutput("cor4")), status="danger"),
+                               box(title="Sorted Adverse Events", width=NULL, uiOutput("sortby4"), div(style="overflow-x: scroll; position: relative", withSpinner(plotlyOutput("bar4"))), status="warning"))
+                    )
             )
             
         )
