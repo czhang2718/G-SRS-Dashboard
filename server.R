@@ -13,6 +13,7 @@ library(shinyBS)
 library(shinycssloaders)
 library(formattable)
 library(tinytex) # <- formattable dependency
+library(dplyr)
 
 function(input, output, session) {
     
@@ -22,19 +23,19 @@ function(input, output, session) {
     output$top_ae <- renderPlotly({
         #adverse events
         aes = dset[which(dset$INAME == input$intro_drug), c(3, 7, 11)];
-        validate(
-            need(nrow(aes)>0, "No Data Available")
+        shiny::validate(
+            need(nrow(aes)>0, 'No Data Available')
         )
         if(input$sort_by == "PT COUNT"){
             plot_ly(aes, x=~PT_COUNT, y=~reorder(PT_TERM, PT_COUNT),type = "bar", orientation = "h", height = max(30*nrow(aes), 400),
-                    color = I("orange"), source = "C") %>%
+                    color = I("#f5c767"), source = "C") %>%
                 layout(bargap=.1, showlegend = FALSE, autosize=TRUE, yaxis = list(title="", automargin = TRUE), xaxis = list(automargin=TRUE, side="top")) %>%
                 plotly::config(modeBarButtonsToRemove = c("zoomIn2d", "zoomOut2d", "displaylogo", "zoom2d", "hoverClosestGl2d", "pan2d"))
         }
         else {
             plot_ly(aes, x=~PRR, y=~reorder(PT_TERM, PRR), type = "bar", orientation = "h", height = max(30*nrow(aes), 400), 
-                    source = "D") %>%
-                layout(bargap=.1, showlegend = FALSE, autosize=TRUE, yaxis = list(title="", automargin = TRUE)) %>%
+                    color=I("#821e4e"), source = "D") %>%
+                layout(bargap=.1, showlegend = FALSE, autosize=TRUE, yaxis = list(title="", automargin = TRUE), xaxis = list(automargin=TRUE, side="top")) %>%
                 plotly::config(modeBarButtonsToRemove = c("zoomIn2d", "zoomOut2d", "displaylogo", "zoom2d", "hoverClosestGl2d", "pan2d"))
         }
     })
@@ -55,7 +56,7 @@ function(input, output, session) {
         if(nrow(aes)==0){
             showNotification("Not enough data available", type="warning")
         }
-        validate(
+        shiny::validate(
             need(nrow(aes)>0, "No Data Available")
         )
         aes$PT_COUNT = round(aes$PT_COUNT, 2)
@@ -78,8 +79,8 @@ function(input, output, session) {
             easyClose = TRUE,
             title=paste0(toTitleCase(tolower(input$intro_drug)), "-related Adverse Events"),
             div(renderFormattable({formattable(df, align = c("l",rep("r", ncol(df) - 1)),
-                                           list(Count=my_color_bar(color="#ffbc42",width = 110), PRR=my_color_bar(color="#349be3",width = 110))
-            )}), style="max-height: 500px; overflow-y: scroll")
+                                               list(Count=my_color_bar(color="#fad584",width = 110), PRR=my_color_bar(color="#cf4085",width = 110))
+            )}), style="max-height: 510px; overflow-y: scroll")
         ))
         
     })
@@ -87,7 +88,7 @@ function(input, output, session) {
     #pie
     output$pie_chart <- renderPlotly({
         total_rows = nrow(dset[which(dset$INAME==input$intro_drug),])
-        validate(
+        shiny::validate(
             need(total_rows>0, "No Data Available")
         )
         g1 = nrow(dset[which(dset$INAME==input$intro_drug & dset$PRR<1),])
@@ -120,7 +121,7 @@ function(input, output, session) {
         sd_count = round(sd(dat2), 2)
         iqr_count = round(IQR(dat2), 2)
         df <- cbind(data.frame("1" =c("PRR", "Count"), "2" = c(q1_prr, q1_cnt), "3"=c(median_prr, median_count), "4" = c(q3_prr, q3_cnt), "5"=c(mean_prr, mean_count), 
-                    "6" = c(sd_prr, sd_count)));
+                               "6" = c(sd_prr, sd_count)));
         if(length(dat1)>0){
             n=dset$CASE_COUNT[which(dset$INAME==input$intro_drug)][1]
         }
@@ -155,7 +156,7 @@ function(input, output, session) {
             autoWidth = TRUE,
             scrollX = TRUE,
             scrollY = '350px')
-            )})
+        )})
         
         output$mult_comp_csv<- downloadHandler(
             filename = function(){
@@ -279,7 +280,7 @@ function(input, output, session) {
             }
         }
     }
-
+    
     
     
     observeEvent(input$class_l1, {
@@ -367,7 +368,7 @@ function(input, output, session) {
     
     output$single_ae1 <- renderPlotly({
         dat = pts$data
-        validate(
+        shiny::validate(
             need(nrow(dat)>0, "No Data Available")
         )
         plot_ly(dat, x = ~reorder(name, -cor), y = ~round(cor, digits = 3), type = "bar", color = ~cor>0, colors = c("#e82a2a", "#1b3fcf"), 
@@ -532,10 +533,10 @@ function(input, output, session) {
     ord_subset <- function(){
         subset <- getSubset()
         return (data.frame("Substance" = toTitleCase(tolower(subset$INAME)), "Substance Count"=subset$CASE_COUNT.x, 
-                                 "count1"=subset$PT_COUNT.x, "prr1"=subset$PRR.x, 
-                                 "count2"=subset$PT_COUNT.y, "prr2"=subset$PRR.y, 
-                                 "ATC Level 1" = toTitleCase(tolower(subset$ATC1.x)), "ATC Level 2" = toTitleCase(tolower(subset$ATC2.x)), 
-                                 "ATC Level 3" = toTitleCase(tolower(subset$ATC3.x)), "ATC Level 4" = toTitleCase(tolower(subset$ATC4.x))))
+                           "count1"=subset$PT_COUNT.x, "prr1"=subset$PRR.x, 
+                           "count2"=subset$PT_COUNT.y, "prr2"=subset$PRR.y, 
+                           "ATC Level 1" = toTitleCase(tolower(subset$ATC1.x)), "ATC Level 2" = toTitleCase(tolower(subset$ATC2.x)), 
+                           "ATC Level 3" = toTitleCase(tolower(subset$ATC3.x)), "ATC Level 4" = toTitleCase(tolower(subset$ATC4.x))))
     }
     
     # renders datatable of subsetted data
@@ -708,13 +709,13 @@ function(input, output, session) {
     
     output$cor1a <- renderText({
         pt1_pt2 <- data_filt()
-        paste0(" ", "Correlation (filtered data)=", format(cor(pt1_pt2$L2_PRR.x,pt1_pt2$L2_PRR.y),digit=4),","," N =",nrow(pt1_pt2),"\n")
+        paste0(" ", "Correlation (filtered data) = ", format(cor(pt1_pt2$L2_PRR.x,pt1_pt2$L2_PRR.y),digit=4),","," N =",nrow(pt1_pt2),"\n")
         
     })
     
     output$cor1b <- renderText({
         pt1_pt2 <- data()
-        paste("Correlation (unfiltered data)=", format(cor(pt1_pt2$L2_PRR.x,pt1_pt2$L2_PRR.y),digit=4),","," N =",nrow(pt1_pt2),"\n")
+        paste("Correlation (unfiltered data) = ", format(cor(pt1_pt2$L2_PRR.x,pt1_pt2$L2_PRR.y),digit=4),","," N =",nrow(pt1_pt2),"\n")
         
     })
     
@@ -744,7 +745,7 @@ function(input, output, session) {
         }
     )
     
-
+    
     
     # -------------------------------------------------------PAGE 3--------------------------------------------------------
     
@@ -757,7 +758,7 @@ function(input, output, session) {
     
     output$subs_bar <- renderPlotly({
         dat = subs$data
-        validate(
+        shiny::validate(
             need(nrow(dat)>0, "No Data Available")
         )
         plot_ly(dat, x = ~reorder(name, -cor), y = ~round(cor, digits = 3), type = "bar", color = ~cor>0, colors = c("#e82a2a", "#1b3fcf"), 
@@ -806,7 +807,7 @@ function(input, output, session) {
         if(dim(subs$data)[1] < length(subs_list)){
             new_sub = tail(subs_list, n=1);
             sub1 <- subset(dset, select=c(PT_TERM, PT_COUNT, PT_TERM, PRR, L2_PRR),
-                          subset=(INAME == input$sub1 & PT_COUNT>input$min_ae))
+                           subset=(INAME == input$sub1 & PT_COUNT>input$min_ae))
             sub2 <- subset(dset, select=c(PT_TERM, PT_COUNT, PT_TERM, PRR, L2_PRR),
                            subset=(INAME == new_sub & PT_COUNT>input$min_ae))
             comb = merge(sub1, sub2, by="PT_TERM") %>% distinct()
@@ -1011,4 +1012,104 @@ function(input, output, session) {
         )  
     })
     
+    #------------------------------------------------------------------------------------------------------------------------------------------
+    #------------------------------------------------------------------- PAGE 4 ----------------------------------------------------------------
+    
+    dat4 <- reactiveValues(m=data.frame(PT_TERM=vector(), PRR.x=vector(), PRR.y=vector()))
+    
+    
+    observeEvent(list(input$cc_1, input$cc_2), {
+        if(input$cc_level=="1") class=dset$ATC1
+        else if(input$cc_level=="2") class=dset$ATC2
+        else if(input$cc_level=="3") class=dset$ATC1
+        else class=dset$ATC4
+        d1<-subset(dset,select=c(PT_TERM,PT_COUNT,PRR),
+                   subset=(toupper(class)==toupper(input$cc_1))) # & PT_COUNT>input$ptcount2)
+        
+        # print(d1)
+        d1 <- d1 %>%
+            group_by(PT_TERM) %>%
+            summarise(
+                PRR = weighted.mean(PRR, PT_COUNT),
+                PT_COUNT = sum(PT_COUNT)
+            ) %>%
+            as.data.frame()
+        
+        if(input$cc_type=="Drug"){
+            d2<-subset(dset,select=c(PT_TERM,PT_COUNT,PRR),
+                       subset=(INAME==input$cc_2)) # deleted toupper(input$cc_2)
+        }
+        else{
+            d2<-subset(dset,select=c(PT_TERM,PT_COUNT, PRR),
+                       subset=(dset$ATC1==toupper(input$cc_2) | dset$ATC2==toupper(input$cc_2)
+                               | dset$ATC3==toupper(input$cc_2) | dset$ATC4==toupper(input$cc_2)))
+            d2 <- d2 %>%
+                group_by(PT_TERM) %>%
+                summarise(
+                    PRR = weighted.mean(PRR, PT_COUNT),
+                    PT_COUNT = sum(PT_COUNT)
+                ) %>%
+                as.data.frame()
+        }
+        dat4$m <- merge(d1,d2,by="PT_TERM") %>% distinct()
+        
+    })
+    
+    output$cc_1 <- renderUI({
+        if(input$cc_level=="2"){
+            selectizeInput("cc_1", "Class", l2, multiple=FALSE, width="100%")
+        }
+        else if(input$cc_level=="3"){
+            selectizeInput("cc_1", "Class", l3, multiple=FALSE, width="100%")
+        }
+        else if(input$cc_level=="4"){
+            selectizeInput("cc_1", "Class", l4, multiple=FALSE, width="100%", options = list(maxOptions=600))
+        }
+        else{
+            selectizeInput("cc_1", "Class", l1, multiple=FALSE, width="100%")
+        }
+    })
+    
+    output$cc_2 <- renderUI({
+        if(input$cc_type=="Drug"){
+            selectizeInput("cc_2", "Drug/Class", choices=vars2, width="100%", options=list(maxOptions=12000), selected=vars2[2])
+        }
+        else{
+            selectizeInput("cc_2", "Drug/Class", choices=list('Level 1'=l1, 'Level 2'=l2, 'Level 3'=l3, 'Level 4'=l4), width="100%")
+        }
+    })
+    
+    output$cor4 <- renderPlotly({
+        shiny::validate(
+            need(nrow(dat4$m)>0, 'No Data Available')
+        )
+        plot_ly(dat4$m, x=~PRR.x, y=~PRR.y, hovertext =~toTitleCase(tolower(PT_TERM)), color=I('firebrick')) %>%
+            layout(
+                title=paste0(input$cc_1, " vs. ", input$cc_2),
+                xaxis=list(title=input$cc_1),
+                yaxis=list(title=input$cc_2)
+            )
+    })
+    
+    
+    output$bar4 <- renderPlotly({
+        shiny::validate(
+            need(nrow(dat4$m)>0, 'No Data Available')
+        )
+        if(input$sortby4==input$cc_1){
+            plot_ly(dat4$m, x=~reorder(PT_TERM, -PRR.x), y=~PRR.x, type="bar", name=input$cc_1, width= 100*nrow(dat4$m), source='E') %>%
+                add_trace(y=~PRR.y, name=input$cc_2) %>% 
+                layout(yaxis = list(title = 'PRR'), xaxis = list(title='Adverse Events'), barmode = 'stack', autosize=TRUE, legend = list(x=0))
+        }
+        else{
+            plot_ly(dat4$m, x=~reorder(PT_TERM, -PRR.y), y=~PRR.x, type="bar", name=input$cc_2, width= 1000+100*nrow(dat4$m), source='E') %>%
+                add_trace(y=~PRR.y, name=input$cc_1) %>% 
+                layout(yaxis = list(title = 'PRR'), xaxis = list(title='Adverse Events'), barmode = 'stack', autosize=TRUE, legend = list(x=0))
+        }
+        
+    })
+    
+    output$sortby4 <- renderUI({
+        selectizeInput("sortby4", "Sort by", c(input$cc_1, input$cc_2))
+    })
 }
