@@ -16,7 +16,7 @@ dashboardPage(
     dashboardHeader(title = "G-SRS Data Explorer"),
     dashboardSidebar(
         sidebarMenu(
-            menuItem("Introduction", tabName="intro"),
+            menuItem("Home", tabName="intro"),
             menuItem("Compare Adverse Events", tabName="compare_ae"),
             menuItem("Compare Substances", tabName = "compare_subs"),
             menuItem("Class Comparison", tabName="class_comp")
@@ -30,28 +30,32 @@ dashboardPage(
                     h1("G-SRS Data Explorer", align="center"),
                     fluidRow(
                         column(width = 12,
-                               selectInput("intro_drug", "Select Medical Drug", vars2, multiple=FALSE, width="100%", selected=vars2[2])
+                               selectInput("intro_drug", "Select Drug", vars2, multiple=FALSE, width="30%", selected=vars2[5])
                         )  
                     ),
                     fluidRow(
                         
-                        column(width = 7,
+                        column(width = 6,
                                fluidRow(
-                                   column(width=12, 
+                                   column(width=12,
                                           tags$div(id="pie-div", box(id= "intro-pie", width = NULL, status="warning",
                                                                      solidHeader = TRUE, plotlyOutput("pie_chart"))
                                           )),
-                                   column(width=12, tags$div(id="summary", box(title="Summary Table", width=NULL, status="primary",
+                                   column(width=12, tags$div(id="summary", box(id="table-box", title="Summary Statistics", width=NULL, status="primary",
                                                                                solidHeader=T, dataTableOutput("sum_table"))))
                                    
                                )
                         ),
                         
-                        column(width = 5,
+                        column(width = 6,
                                box(id= "intro-box", title = "Adverse Events", width = NULL, 
-                                   div(style="display: inline-block;", selectInput("sort_by", c("PT COUNT", "PRR"), 
-                                                                                   label = "Sort by", selected="PT COUNT", multiple=FALSE, width = "110px")),
+                                   
+                                   div(style="display: inline-block;", selectInput("sort_by", c("Number of Adverse Events", "PRR"), 
+                                                                                   label = "Sort by", selected="Number of Adverse Events", multiple=FALSE, width = "210px")),
                                    actionButton("popdt", "", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: right"),
+                                   div(style="display: inline-block; float: right", downloadButton("bar1_xlsx", "XLSX")),
+                                   div(style="display: inline-block; float: right", downloadButton("bar1_txt", "TXT")),
+                                   div(style="display: inline-block; float: right", downloadButton("bar1_csv", "CSV")),
                                    div(id="aebar", style="overflow-y: scroll; position: relative", plotlyOutput("top_ae"))
                                )
                         )
@@ -63,18 +67,18 @@ dashboardPage(
             tabItem("compare_ae", 
                     fluidRow(
                         column(width=4, 
-                               box(id = "box1a", title = "Selectors", status = "warning", solidHeader = TRUE, width=NULL,
+                               box(id = "box1a", status = "warning", width=NULL,
                                    collapsible = TRUE,
                                    selectizeInput("xcol","Adverse Event (x-axis)",vars,selected=vars[4],multiple=FALSE, 
                                                   options=list(maxOptions=12000)),
                                    selectizeInput("ycol","Adverse Event (y-axis)",vars,selected=vars[5930],multiple=FALSE), 
                                    options=list(maxOptions=12000)),
-                               box(id = "box1b", title="Restrictions", status = "info", side="left", width=NULL,
+                               box(id = "box1b", title="Change Parameters", status = "info", side="left", width=NULL,
                                    collapsible = TRUE,
                                    collapsed = TRUE,
                                    sliderInput(inputId="casecount",label="Substance Count",min=100,max=50000,value=1000),
                                    sliderInput(inputId="ptcount",label="Adverse Event Count",min=5,max=100,value=10)),
-                               box(id = "box1c", title="Filter by ATC Classification", status = "danger", side="left", width=NULL,
+                               box(id = "box1c", title="ATC Classes", status = "danger", side="left", width=NULL,
                                    collapsible = TRUE,
                                    collapsed = TRUE,
                                    soldHeader = FALSE,
@@ -116,7 +120,7 @@ dashboardPage(
                                    tabPanel("Multiple Selection",
                                             width = "100%",
                                             # height = "100%",
-                                            selectizeInput("ae1", "Adverse Event", vars, width = "100%",  selected = vars[4], options = list(maxOptions=12000)),
+                                            selectizeInput("ae1", "Adverse Event", vars, width = "30%",  selected = vars[4], options = list(maxOptions=12000)),
                                             selectizeInput("other_ae", "Compare With", vars, width = "100%", options = list(maxOptions=12000), multiple = TRUE),
                                             span("Number of Observations \u2265"),
                                             div(style="display: inline-block;", numericInput("num_obs", label = NULL, value = 5, width = "55px", min=1, max=1000)),
@@ -159,13 +163,13 @@ dashboardPage(
             tabItem("compare_subs",
                     fluidRow(
                         column(width=4,
-                               box(title = "Selectors", status = "success", solidHeader = TRUE, width=NULL,
+                               box(status = "success", width=NULL,
                                    collapsible = TRUE,
-                                   selectizeInput("xcol2","Substance x-axis",vars2,selected=vars2[2],multiple=FALSE,
+                                   selectizeInput("xcol2","Substance x-axis",vars2,selected=vars2[11],multiple=FALSE,
                                                   options=list(maxOptions=2500)),
-                                   selectizeInput("ycol2","Substance y-axis",vars2,selected=vars2[3],multiple=FALSE,
+                                   selectizeInput("ycol2","Substance y-axis",vars2,selected=vars2[14],multiple=FALSE,
                                                   options=list(maxOptions=2500))),
-                               box(title="Restrictions", status="info", side="left", width=NULL,
+                               box(title="Change Parameters", status="info", side="left", width=NULL,
                                    collapsible = TRUE,
                                    collapsed = TRUE,
                                    sliderInput(inputId="ptcount2",label="Adverse Event Count",min=5,max=100,value=10)
@@ -193,14 +197,14 @@ dashboardPage(
                                             DTOutput("table2")
                                    ),
                                    tabPanel(title = "Multiple Selection", width = "100%",
-                                            selectizeInput("sub1", "Substance", vars2, width = "100%",  selected = vars2[4], options = list(maxOptions=2500)),
+                                            selectizeInput("sub1", "Substance", vars2, width = "30%",  selected = vars2[4], options = list(maxOptions=2500)),
                                             # other_ae --> sub2
                                             selectizeInput("sub2", "Compare With:", vars2, width = "100%", options = list(maxOptions=2500), multiple = TRUE),
                                             span("Showing correlations for adverse events with >="),
                                             div(style="display: inline-block;", numericInput("num_subs", label = NULL, value = 5, width = "55px", min=2, max=1000)),
                                             span("correlated substances. "),
                                             "Minimum adverse event count: ",
-                                            div(style="display: inline-block;", numericInput("min_ae", label = NULL, value = 10, width = "55px", min=5, max=100)),
+                                            div(style="display: inline-block;", numericInput("min_ae", label = NULL, value = 10, width = "60px", min=5, max=100)),
                                             withSpinner(plotlyOutput("subs_bar"))
                                    )
                                )
@@ -210,27 +214,20 @@ dashboardPage(
             ),
             tabItem("class_comp",
                     fluidRow(
-                        column(width=12, 
-                               tags$head(
-                               tags$style(HTML("
-                                  .selectize-input {
-                                    width:100%;
-                                  }
-                                "))
-                               ),
-                               div(style="line-height: 50%", div(style="display: inline-block; vertical-align:top; width:4%", 
-                                                                 selectInput("cc_level", "Level", c("1", "2", "3", "4"), multiple=FALSE, selected="1")),
-                               div(style="display: inline-block; vertical-align:top; width:95%", uiOutput("cc_1")), 
-                               p(" vs.", style="font-size: 18px; font-weight: bold; text-align: center"),
-                               div(style="display: inline-block; vertical-align:top; width:6%", 
-                                   selectInput("cc_type", "Type", c("Drug", "Class"), multiple=FALSE, selected="Drug")),
-                               div(style="display: inline-block; vertical-align:top; width:93%", uiOutput("cc_2")))
+                        column(width=12, align="center", 
+                               div(style="line-height: 50%", div(style="display: inline-block; vertical-align:top; width:90px", 
+                                                                 selectInput("cc_type", "Type", c("Drug", "Class"), multiple=FALSE, selected="Drug")),
+                               div(style="display: inline-block; vertical-align:top; width:30%", uiOutput("cc_2")), 
+                               p(" vs.", style="font-size: 18px; font-weight: bold; display: inline-block; vertical-align: -500%"),
+                               div(style="display: inline-block; vertical-align:top; width:65px", 
+                                   selectInput("cc_level", "Level", c("1", "2", "3", "4"), multiple=FALSE, selected="1")),
+                               div(style="display: inline-block; vertical-align:top; width:30%", uiOutput("cc_1")))
                         )
                     ),
                     fluidRow(
                         column(width=12,
-                               box(title="PRR Correlations", width=NULL, withSpinner(plotlyOutput("cor4")), status="danger"),
-                               box(title="Sorted Adverse Events", width=NULL, uiOutput("sortby4"), div(style="overflow-x: scroll; position: relative", withSpinner(plotlyOutput("bar4"))), status="warning"))
+                               box(width=NULL, div(style="width:30%", uiOutput("sortby4")), div(style="overflow-x: scroll; position: relative", withSpinner(plotlyOutput("bar4"))), status="warning"),
+                               box(width=NULL, withSpinner(plotlyOutput("cor4")), textOutput('c4'), status="danger"))
                     )
             )
             
