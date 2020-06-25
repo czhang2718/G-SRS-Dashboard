@@ -9,11 +9,17 @@ vars<-dset_PTs$PT_TERM
 dset_SUBs <- read.csv("SUBs.csv")
 vars2<-dset_SUBs$INAME
 
+#page 4
+l1 <- read.delim("l1.txt", header=TRUE)$c1
+l2 <- read.delim("l2.txt", header=TRUE)$c2
+l3 <- read.delim("l3.txt", header=TRUE)$c3
+l4 <- read.delim("l4.txt", header=TRUE)$c4
+
 # collapse other boxes when a new one is opened
 collapseInput <- function(inputId, boxId) {
   tags$script(
     gsub("%s", boxId,
-      "$('#%s').closest('.box').on('hidden.bs.collapse', function () {
+         "$('#%s').closest('.box').on('hidden.bs.collapse', function () {
         if('%s' === 'box1a') col_1a = true;
         else if('%s' === 'box1b') col_1b = true;
         else if('%s' === 'box1c') col_1c = true;
