@@ -1,7 +1,6 @@
 let col_1a = false;
 let col_1b = true;
 let col_1c = true;
-
 let lastClicked = ""; //prevent rerendering
 
 function shade(id){
@@ -44,58 +43,74 @@ function display_cpk(id){
             </tr>
         </thead>
         <tr>
-            <td><img class = "cpk" src = "https://github.com/czhang2718/GSRS-Dashboard/blob/master/cpk%20colors/light%20grey.PNG?raw=true" >&nbsp;Light Grey</td>
+            <td><div class='square' style='background-color:#C8C8C8'></div>&nbsp;Light Grey</td>
             <td>Carbon</td>
         </tr>
         <tr>
-            <td><img class = "cpk" src = "https://github.com/czhang2718/GSRS-Dashboard/blob/master/cpk%20colors/red.PNG?raw=true">&nbsp;Red</td>
+            <td><div class='square' style='background-color:#F00000'></div>&nbsp;Red</td>
             <td>Oxygen</td>
         </tr>
         <tr>
-            <td><img class = "cpk" src = "https://github.com/czhang2718/GSRS-Dashboard/blob/master/cpk%20colors/white.PNG?raw=true" style = "border: .75px solid black;">&nbsp;White</td>
+            <td><div class='square' style='background-color:#ffffff' border: 1px></div>&nbsp;White</td>
             <td>Hydrogen</td>
         </tr>
         <tr>
-            <td><img class = "cpk" src = "https://github.com/czhang2718/GSRS-Dashboard/blob/master/cpk%20colors/light%20blue.PNG?raw=true">&nbsp;Light Blue</td>
+            <td><div class='square' style='background-color:#8F8FFF'></div>&nbsp;Light Blue</td>
             <td>Nitrogen</td>
         </tr>
         <tr>
-            <td><img class = "cpk" src = "https://github.com/czhang2718/GSRS-Dashboard/blob/master/cpk%20colors/yellow.PNG?raw=true">&nbsp;Yellow</td>
+            <td><div class='square' style='background-color:#FFC832'></div>&nbsp;Yellow</td>
             <td>Sulfur</td>
         </tr>
         <tr>
-            <td><img class = "cpk" src = "https://github.com/czhang2718/GSRS-Dashboard/blob/master/cpk%20colors/orange.PNG?raw=true">&nbsp;Orange</td>
+            <td><div class='square' style='background-color:#FFA500'></div>&nbsp;Orange</td>
             <td>Phosphorous</td>
         </tr>
         <tr>
-            <td><img class = "cpk" src = "https://github.com/czhang2718/GSRS-Dashboard/blob/master/cpk%20colors/green.PNG?raw=true">&nbsp;Green</td>
+            <td><div class='square' style='background-color:#00FF00'></div>nbsp;Green</td>
             <td>Chlorine</td>
         </tr>
         <tr>
-            <td><img class = "cpk" src = "https://github.com/czhang2718/GSRS-Dashboard/blob/master/cpk%20colors/brown.PNG?raw=true">&nbsp;Brown</td>
+            <td><div class='square' style='background-color:#A52A2A'></div>&nbsp;Brown</td>
             <td>Bromine, Zinc</td>
         </tr>
         <tr>
-            <td><img class = "cpk" src = "https://github.com/czhang2718/GSRS-Dashboard/blob/master/cpk%20colors/blue.PNG?raw=true">&nbsp;Blue</td>
+            <td><div class='square' style='background-color:#0000FF'></div>&nbsp;Blue</td>
             <td>Sodium</td>
         </tr>
         <tr>
-            <td><img class = "cpk" src = "https://github.com/czhang2718/GSRS-Dashboard/blob/master/cpk%20colors/dark%20orange.PNG?raw=true">&nbsp;Dark Orange</td>
+            <td><div class='square' style='background-color:#DD7700'></div>&nbsp;Dark Orange</td>
             <td>Iron</td>
         </tr>
         <tr>
-            <td><img class = "cpk" src = "https://github.com/czhang2718/GSRS-Dashboard/blob/master/cpk%20colors/dark%20green.PNG?raw=true">&nbsp;Dark Green</td>
+            <td><div class='square' style='background-color:#2A802A'></div>&nbsp;Dark Green</td>
             <td>Magnesium</td>
         </tr>
         <tr>
-            <td><img class = "cpk" src = "https://github.com/czhang2718/GSRS-Dashboard/blob/master/cpk%20colors/dark%20grey.PNG?raw=true">&nbsp;Dark Grey</td>
+            <td><div class='square' style='background-color:#808080'></div>&nbsp;Dark Grey</td>
             <td>Calcium</td>
         </tr>
         <tr>
-            <td><img class = "cpk" src = "https://github.com/czhang2718/GSRS-Dashboard/blob/master/cpk%20colors/deep%20pink.PNG?raw=true">&nbsp;Deep Pink</td>
+            <td><div class='square' style='background-color:#FF1493'></div>&nbsp;Deep Pink</td>
             <td>Unknown</td>
         </tr>
     </table>`;
     }
     lastClicked = id;
 }
+
+setHeight = function() {
+    const window_height = $(window).height();
+    const header_height = $(".main-header").height();
+    const boxHeight = window_height - header_height;
+    $("#intro-pie").height(boxHeight/2);
+    $("#aebar").height($('#table-box').height()+$('#intro-pie').height());
+};
+
+$(document).on("shiny:connected", function(event) {
+    setHeight();
+});
+
+$(window).resize(function(e) {
+    setHeight();
+})
