@@ -1,5 +1,13 @@
+library(shinyjs)
+
+load_data <-function() {
+  hide('startbutton')
+  Sys.sleep(0)
+  show('startbutton')
+}
+
 #load main dataset
-dset <- read.csv("DSET_ALL.csv")
+dset <- read.csv("DSET_ALL2.csv")
 
 # page 1
 dset_PTs <- read.delim("PTs.txt",header=TRUE)
@@ -52,3 +60,4 @@ collapseInput <- function(inputId, boxId) {
       ")
   )
 }
+
