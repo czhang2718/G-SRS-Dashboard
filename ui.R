@@ -287,8 +287,9 @@ tagList(
                                      tabPanel("Box Plots", status="success", div(style="overflow-x: scroll; position: relative", withSpinner(plotlyOutput("boxplots")))),
                                      tabPanel("Histogram", width=12,
                                               splitLayout(  
-                                                       div(style="margin-top: 20px", plotlyOutput("histogram")),
-                                                       div(div(style="float: left", numericInput("pcentile_input", "Percentile", value=95, min=1, max=99, step=.5)),
+                                                       div(style="margin-top: 60px; overflow-x: hidden", plotlyOutput("histogram")),
+                                                       div(uiOutput("drug_name"), tags$style(HTML("#drug_name{font-size: large; text-align: center}")), div(style="float: left; display:inline-block", numericInput("pcentile_input", "Percentile", value=95, step=.5, width="75px")),
+                                                                                      div(style="display: inline-block", uiOutput("perc_val")), div(style="display: inline-block", uiOutput("perc_count")),
                                                        div(style="float:right", downloadButton("dload4_1", "Download")),
                                                        div(style="float:right", selectInput("downloadType4_1", label=NULL, choices=c("CSV"=".csv", "TXT"=".txt", "XLSX"=".xlsx", "JSON"=".json"), selected=".csv", width=80)),
                                                        DTOutput("drugperc")))
