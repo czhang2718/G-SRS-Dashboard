@@ -1191,8 +1191,6 @@ function(input, output, session) {
         }
         else if(input$class_op=="ATC Class") {
             req(!is.null(input$cc_1))
-            print(input$cc_1)
-            print(str_sub(as.character(input$cc_1), 1, 1))
             if(str_sub(as.character(input$cc_1), 1, 1)=="*") class=str_sub(as.character(input$cc_1), 2)
             else class=input$cc_1
             if(input$cc_level=="1") data<-unique(dset[which(dset$ATC1==class),])
@@ -1221,7 +1219,6 @@ function(input, output, session) {
                 tryCatch(
                     {
                         data <- dset[which(dset$INAME %in% readLines(input$drugs_file$datapath)),]
-                        print(data)
                     },
                     error = function(e) {
                         # return a safeError if a parsing error occurs
@@ -1246,7 +1243,6 @@ function(input, output, session) {
     
     dat4 <- reactive({
         req(length(class_dat_global()$PRR)>0)
-        print("observe for dat4m")
         d1<-class_dat_global()[, c("PT_TERM","PT_COUNT","PRR")]
         
         d1 <- d1 %>%
@@ -1376,7 +1372,6 @@ function(input, output, session) {
     })
     
     observeEvent(input$class_op, priority=100, {
-        print("observe class op change")
         hideElement("atc_div")
         hideElement("cstm")
         hideElement("upload_div")
@@ -1402,7 +1397,7 @@ function(input, output, session) {
         
         levels <- dat %>%
             group_by(INAME) %>%
-            summarise(m = median(PRR)) %>%
+            summarise(m = -median(PRR)) %>%
             arrange(m) %>%
             pull(INAME)
         
@@ -1419,7 +1414,7 @@ function(input, output, session) {
     
     
     output$drugperc <- renderDataTable(
-        unique(dset[which(dset$INAME==input$cc_2 & dset$PRR>=quantile(class_dat_global()$PRR, input$pcentile_input/100)), c("PT_TERM", "L10_PRR")]), rownames=FALSE, selection="single", class="compact")
+        data.frame("PRR"=round(unique(dset[which(dset$INAME==input$cc_2 & dset$PRR>=quantile(class_dat_global()$PRR, input$pcentile_input/100)),])$PRR, 2), "LOG_10"=round(unique(dset[which(dset$INAME==input$cc_2 & dset$PRR>=quantile(class_dat_global()$PRR, input$pcentile_input/100)),])$L10_PRR, 2), "ADVERSE_EVENT"=unique(dset$PT_TERM[which(dset$INAME==input$cc_2 & dset$PRR>=quantile(class_dat_global()$PRR, input$pcentile_input/100))])), rownames=FALSE, selection="single", class="compact")
     
     
     
@@ -1487,15 +1482,44 @@ function(input, output, session) {
         dat <- summaryBy(L10_PRR ~ PT_TERM, data = class_dat_global(), 
                          FUN = list(median))
         
-        plot_ly(dat, type="histogram", x=~L10_PRR.median, marker=list(color="peachpuff")) %>%
+        plot_ly(dat, type="histogram", x=~L10_PRR.median, marker=list(color="peachpuff"), source="I") %>%
             layout(
-                # margin = list(b=margin_size),
-                # yaxis = list(title="log-10 PRR"),
-                # xaxis = list(title = "Drug"),
-                showlegend = FALSE
+                showlegend = FALSE,
+                xaxis=list(title="Median PRR")
             ) %>%
             plotly::config(modeBarButtons = list(list("toImage")), displaylogo = FALSE) %>%
-            layout(shapes = list(vline(x_val())), title="Frequency of PRR Values in Class")
+            layout(shapes = list(vline(x_val())), title="Frequency of Median PRRs of Class Drugs")
+    })
+    
+    output$drug_name<-renderUI({
+        paste(input$cc_2, " - related Adverse Events")
+    })
+    
+    val_upd <- reactiveVal(0)
+    pcent_upd <- reactiveVal(0)
+    
+    output$perc_val <- renderUI({
+        numericInput("val", "Value", value=isolate(round(quantile(class_dat_global()$PRR, input$pcentile_input/100), 2)), width="75px", step=.01)
+    })
+    
+    observeEvent(input$pcentile_input, {
+        pcent_upd(1)
+        if(val_upd()==1) val_upd(0)
+        else updateNumericInput(session, "val", value=ifelse(input$pcentile_input/100>1, 0, round(quantile(class_dat_global()$PRR, input$pcentile_input/100), 2)))
+    }, ignoreInit = TRUE)
+    
+    observeEvent(input$val, {
+        val_upd(1)
+        if(pcent_upd()==1) pcent_upd(0)
+        else updateNumericInput(session, "pcentile_input", value=round(100*ecdf(class_dat_global()$PRR) (input$val), 2))
+    })
+    
+    output$perc_count <- renderUI({
+        i=input$val
+        j=input$pcentile_input # to make it dependent
+        dat<-class_dat_global()$PRR
+        len <- length(unique(dset[which(dset$INAME==input$cc_2 & dset$PRR>=quantile(class_dat_global()$PRR, input$pcentile_input/100)),])$PT_TERM)
+        paste("Count: ", len)
     })
 }
 
