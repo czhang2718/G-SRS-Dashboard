@@ -20,6 +20,9 @@ library(scales)
 library(doBy)
 library(readxl)
 library(stringr)
+library(htmltools)
+library(heatmaply)
+library(xml2)
 
 function(input, output, session) {
     
@@ -34,7 +37,9 @@ function(input, output, session) {
     #right-side vertical bar chart
     output$top_ae <- renderPlotly({
         #adverse events
+        
         aes = dset[which(dset$INAME == input$intro_drug), c(3, 7, 11)] %>% distinct();
+        # aes = dset[which(dset$INAME == input$intro_drug), c(3, 7, 11)] %>% distinct(); Change to use column names
         shiny::validate(
             need(nrow(aes)>0, 'No Data Available')
         )
@@ -125,6 +130,22 @@ function(input, output, session) {
     
     #pie
     output$pie_chart <- renderPlotly({
+        total_rows = nrow(dset[which(dset$INAME==input$intro_drug),])
+        shiny::validate(
+            need(total_rows>0, "No Data Available")
+        )
+        g1 = nrow(dset[which(dset$INAME==input$intro_drug & dset$PRR<1),])
+        g2 = nrow(dset[which(dset$INAME==input$intro_drug & dset$PRR>=1 & dset$PRR<5),])
+        g3 = nrow(dset[which(dset$INAME==input$intro_drug & dset$PRR>=5 & dset$PRR<10),])
+        g4 = nrow(dset[which(dset$INAME==input$intro_drug & dset$PRR>=10 & dset$PRR<100),])
+        g5 = nrow(dset[which(dset$INAME==input$intro_drug & dset$PRR>=100),])
+        df <- data.frame("label"=c("<1", "1-5", "5-10", "10-100", ">100"), "vals" = c(g1, g2, g3, g4, g5))
+        plot_ly(df, labels=~label, values=~vals, key=c("<1", "1-5", "5-10", "10-100", ">100"), type="pie", source="E", hovertemplate="PRR: %{label} <br> %{value}<extra></extra>", name="") %>%
+            plotly::config(modeBarButtons = list(list("toImage")), displaylogo = FALSE) %>% 
+            layout(autosize = T, height = 250, legend=list(title=list(text='<b> PRR </b>')))
+    })
+    
+    output$pie_chart2 <- renderPlotly({
         total_rows = nrow(dset[which(dset$INAME==input$intro_drug),])
         shiny::validate(
             need(total_rows>0, "No Data Available")
@@ -528,6 +549,26 @@ function(input, output, session) {
             plotly::config(modeBarButtons = list(list("toImage")), displaylogo = FALSE)
     })
     
+    #COPY
+    output$mult_ae12 <- renderPlotly({
+        dat = pts$data
+        shiny::validate(
+            need(nrow(dat)>0, "No Data Available")
+        )
+        if(nrow(dat)>5) margin_size=160
+        else margin_size=30
+        plot_ly(dat, x = ~reorder(name, -cor), y = ~round(cor, digits = 2), type = "bar", color = ~cor>0, colors = c("#e82a2a", "#1b3fcf"), 
+                source = "A", name = "<extra><extra>") %>% 
+            layout(
+                yaxis = list(title = "Pearson&#39;s Correlation Coefficient"),
+                xaxis = list(title = "Adverse Event"),
+                showlegend = FALSE,
+                margin = list(b=margin_size)
+            ) %>%
+            plotly::config(modeBarButtons = list(list("toImage")), displaylogo = FALSE)
+    })
+    
+    
     #-------------------------------------------------------box 1, page 2-------------------------------------------------
     
     output$casecount <- renderUI({
@@ -625,6 +666,32 @@ function(input, output, session) {
     
     # renders a ggplot of adverse events
     output$scatterPlot <- renderPlot({
+        xmin <- min(data()$L10_PRR.x)
+        xmax <- max(data()$L10_PRR.x)
+        ymin <- min(data()$L10_PRR.y)
+        ymax <- max(data()$L10_PRR.y)
+        
+        
+        ggplot(data(), aes(x = L10_PRR.x, y = L10_PRR.y)) + 
+            geom_point(color="#392dc2", size = 2) +
+            labs(
+                x = input$xcol, 
+                y = input$ycol,
+                title = paste(input$ycol, " vs. ", input$xcol),
+                subtitle = "PRR Values are Log-Transformed in Both Axes"
+            ) +
+            theme_bw() +
+            theme(plot.title = element_text(hjust = 0.5, size=15), axis.title = element_text(size = 13), 
+                  plot.subtitle = element_text(hjust = 0.5, size=13), axis.text = element_text(size=14)) + 
+            xlim(c(xmin, xmax)) +
+            ylim(c(ymin, ymax)) +
+            gghighlight(atc_col() %in% class()) +
+            scale_x_continuous(breaks = scales::pretty_breaks(n = (max(data()$L10_PRR.x)-min(data()$L10_PRR.x)))) +
+            scale_y_continuous(breaks = scales::pretty_breaks(n = (max(data()$L10_PRR.y)-min(data()$L10_PRR.y))))
+    })
+    
+    # renders a ggplot of adverse events COPY for MODAL
+    output$scatterPlot12 <- renderPlot({
         xmin <- min(data()$L10_PRR.x)
         xmax <- max(data()$L10_PRR.x)
         ymin <- min(data()$L10_PRR.y)
@@ -931,11 +998,26 @@ function(input, output, session) {
             );
     })
     
+    #COPY
+    output$subs_bar2 <- renderPlotly({
+        dat = subs$data %>% distinct()
+        shiny::validate(
+            need(nrow(dat)>0, "No Data Available")
+        )
+        if(nrow(dat)>5) margin_size=160
+        else margin_size=30
+        plot_ly(dat, x = ~reorder(name, -cor), y = ~round(cor, digits = 2), type = "bar", color = ~cor>0, colors = c("#e82a2a", "#1b3fcf"), 
+                source = "B", name = "<extra><extra>") %>% 
+            layout(
+                xaxis = list(title = "Substance"),
+                yaxis = list(title = "Pearson's Correlation Coefficient"),
+                showlegend = FALSE,
+                margin = list(b = margin_size)
+            );
+    })
+    
     
     #rerender
-    observeEvent(input$num_ae, {
-        rerender_subs();
-    })
     observeEvent(input$min_ae, {
         rerender_subs();
     })
@@ -963,6 +1045,8 @@ function(input, output, session) {
     #when sub2 changes
     observeEvent(input$sub2, {
         subs_list = input$sub2
+        print(input$min_ae);
+        rerender_subs();
         if(dim(subs$data)[1] < length(subs_list)){
             new_sub = tail(subs_list, n=1);
             sub1 <- subset(dset, select=c(PT_TERM, PT_COUNT, PT_TERM, PRR, L10_PRR),
@@ -970,7 +1054,7 @@ function(input, output, session) {
             sub2 <- subset(dset, select=c(PT_TERM, PT_COUNT, PT_TERM, PRR, L10_PRR),
                            subset=(INAME == new_sub & PT_COUNT>input$min_ae))
             comb = merge(sub1, sub2, by="PT_TERM") %>% distinct()
-            if(length(comb$PT_TERM) < input$num_ae){ }
+            if(length(comb$PT_TERM) < input$min_ae){ }
             else{
                 subs$data = rbind(subs$data, data.frame(name = new_sub, cor = cor(comb$L10_PRR.x, comb$L10_PRR.y)));
             }
@@ -1081,6 +1165,30 @@ function(input, output, session) {
     
     
     output$scatterPlot2 <- renderPlot({
+        xmin <- min(data2()$L10_PRR.x)
+        xmax <- max(data2()$L10_PRR.x)
+        ymin <- min(data2()$L10_PRR.y)
+        ymax <- max(data2()$L10_PRR.y)
+        
+        ggplot(data2(), aes(x = L10_PRR.x, y = L10_PRR.y)) + 
+            geom_point(color="#113569", size = 2) +
+            labs(
+                x = input$xcol2, 
+                y = input$ycol2,
+                title = paste(input$ycol2, " vs. ", input$xcol2),
+                subtitle = "PRR Values are Log-Transformed in Both Axes"
+            ) +
+            theme_bw() +
+            theme(plot.title = element_text(hjust = 0.5, size=15), plot.subtitle = element_text(hjust = 0.5, size=13),
+                  axis.text = element_text(size=14)) +  
+            xlim(c(xmin, xmax)) +
+            ylim(c(ymin, ymax)) +
+            scale_x_continuous(breaks = scales::pretty_breaks(n = (max(data2()$L10_PRR.x)-min(data2()$L10_PRR.x)))) +
+            scale_y_continuous(breaks = scales::pretty_breaks(n = (max(data2()$L10_PRR.y)-min(data2()$L10_PRR.y))))
+    })
+    
+        #COPY
+    output$scatterPlot22 <- renderPlot({
         xmin <- min(data2()$L10_PRR.x)
         xmax <- max(data2()$L10_PRR.x)
         ymin <- min(data2()$L10_PRR.y)
@@ -1329,6 +1437,38 @@ function(input, output, session) {
         
     })
     
+    #MODAL COPY
+    output$bar42 <- renderPlotly({
+        shiny::validate(
+            need(length(class_dat_global()$PRR)>0, "No Data Available")
+        )
+        
+        if(input$sortby4=="Class"){
+            plot_ly(dat4(), x=~reorder(PT_TERM, -PRR.x), y=~PRR.x, type="bar", name="Class", 
+                    width= 20*nrow(dat4()), source='F') %>%
+                add_trace(y=~PRR.y, name=input$cc_2) %>% 
+                layout(bargap=.1, yaxis = list(title = 'PRR', showline = TRUE), xaxis = list(title='Adverse Events', tickangle=90, showline = TRUE), 
+                       barmode = 'stack', legend = list(x=0), autosize=TRUE, margin = list(l = 20, r = 20, b = 200, t = 10)) %>%
+                plotly::config(modeBarButtons = list(list("toImage")), displaylogo = FALSE)
+        }
+        else if(input$sortby4==input$cc_2){
+            plot_ly(dat4(), x=~reorder(PT_TERM, -PRR.y), y=~PRR.x, type="bar", name=input$cc_2, width= 20*nrow(dat4()), source='F') %>%
+                add_trace(y=~PRR.y, name="Class") %>% 
+                layout(bargap=.1, yaxis = list(title = 'PRR', showline = TRUE), xaxis = list(title='Adverse Events', tickangle=90, showline = TRUE), 
+                       barmode = 'stack', legend = list(x=0), autosize=TRUE, margin = list(l = 20, r = 20, b = 200, t = 10)) %>%
+                plotly::config(modeBarButtons = list(list("toImage")), displaylogo = FALSE)
+        }
+        
+        else{
+            plot_ly(dat4(), x=~reorder(PT_TERM, -(PRR.y+PRR.x)), y=~PRR.x, type="bar", name=input$cc_2, width=20*nrow(dat4()), source='F') %>%
+                add_trace(y=~PRR.y, name="Class") %>% 
+                layout(bargap=.1, yaxis = list(title = 'PRR', showline = TRUE), xaxis = list(title='Adverse Events', tickangle=90, showline = TRUE), 
+                       barmode = 'stack', legend = list(x=0), autosize=TRUE, margin = list(l = 20, r = 20, b = 200, t = 10)) %>%
+                plotly::config(modeBarButtons = list(list("toImage")), displaylogo = FALSE)
+        }
+        
+    })
+    
     
     output$sortby4 <- renderUI({
         selectizeInput("sortby4", "Sort by", c("Total", "Class", input$cc_2), selected="Total")
@@ -1337,6 +1477,42 @@ function(input, output, session) {
     
     # pg 4 box 4: drug correlations
     output$drug_cor <- renderPlotly({
+        shiny::validate(
+            need(length(class_dat_global()$PRR)>0, "No Data Available")
+        )
+        drug_list <- unique(class_dat_global()$INAME)
+        
+        df = data.frame(classDrug=character(), cor=double(), stringsAsFactors=FALSE)
+        for(i in 1:length(drug_list)){
+            drug1 = input$cc_2
+            drug2 = drug_list[i]
+            
+            d1<-subset(dset,select=c(PT_TERM,PT_COUNT,PT_TERM,PRR,L10_PRR),
+                       subset=(INAME==drug1))
+            d2<-subset(dset,select=c(PT_TERM,PT_COUNT,PT_TERM,PRR,L10_PRR),
+                       subset=(INAME==drug2))
+            d1_d2 <- merge(d1,d2,by="PT_TERM") %>% distinct()
+            
+            df = rbind(df, data.frame(classDrug=drug2, cor=cor(d1_d2$PRR.x, d1_d2$PRR.y)))
+        }
+        if(nrow(df)>5) margin_size=160
+        else margin_size=30
+        
+        
+        plot_ly(df, x=~reorder(classDrug, -cor), y=~cor, type="bar", color = ~cor>0, colors = c("#e82a2a", "#1b3fcf"), 
+                source = "G", name = "<extra><extra>", hoverinfo='text', text=~paste(classDrug, ",", round(cor, 2)),
+                autosize=TRUE, width= max(max(1000, 20*nrow(df)), session$clientData$output_bar4_width)) %>% 
+            layout(
+                yaxis = list(title = "Pearson&#39;s Correlation Coefficient"),
+                xaxis = list(title = "Drug in Selected Class"),
+                showlegend = FALSE,
+                margin = list(b=margin_size)
+            ) %>%
+            plotly::config(modeBarButtons = list(list("toImage")), displaylogo = FALSE)
+    })
+    
+    #MODAL COPY
+    output$drug_cor2 <- renderPlotly({
         shiny::validate(
             need(length(class_dat_global()$PRR)>0, "No Data Available")
         )
@@ -1388,6 +1564,31 @@ function(input, output, session) {
     
     
     output$boxplots <- renderPlotly({
+        dat <- class_dat_global()
+        n=length(unique(dat$INAME))
+        dat = rbind(dat, dset[which(dset$INAME==input$cc_2),])
+        
+        if(nrow(dat)>5) margin_size=160
+        else margin_size=30
+        
+        levels <- dat %>%
+            group_by(INAME) %>%
+            summarise(m = -median(PRR)) %>%
+            arrange(m) %>%
+            pull(INAME)
+        
+        plot_ly(dat, x = ~factor(INAME, levels), y=~L10_PRR, type = "box", source='H', width= max(max(20*n, 1000), session$clientData$output_bar4_width), 
+                outline=FALSE, hoverinfo="y", boxpoints=FALSE, color = ~INAME==input$cc_2, colors = c("blue", "red")) %>%
+            layout(
+                margin = list(b=margin_size),
+                yaxis = list(title="log-10 PRR"),
+                xaxis = list(title = "Drug"),
+                showlegend = FALSE
+            ) %>%
+            plotly::config(modeBarButtons = list(list("toImage")), displaylogo = FALSE)
+    })
+    
+    output$boxplots2 <- renderPlotly({
         dat <- class_dat_global()
         n=length(unique(dat$INAME))
         dat = rbind(dat, dset[which(dset$INAME==input$cc_2),])
@@ -1491,6 +1692,24 @@ function(input, output, session) {
             layout(shapes = list(vline(x_val())), title="Frequency of Median PRRs of Class Drugs")
     })
     
+    #MODAL COPY
+    output$histogram2 <- renderPlotly({
+        shiny::validate(
+            need(length(class_dat_global()$PRR)>0, "No Data Available")
+        )
+        
+        dat <- summaryBy(L10_PRR ~ PT_TERM, data = class_dat_global(), 
+                         FUN = list(median))
+        
+        plot_ly(dat, type="histogram", x=~L10_PRR.median, marker=list(color="peachpuff"), source="I") %>%
+            layout(
+                showlegend = FALSE,
+                xaxis=list(title="Median PRR")
+            ) %>%
+            plotly::config(modeBarButtons = list(list("toImage")), displaylogo = FALSE) %>%
+            layout(shapes = list(vline(x_val())), title="Frequency of Median PRRs of Class Drugs")
+    })
+    
     output$drug_name<-renderUI({
         paste(input$cc_2, " - related Adverse Events")
     })
@@ -1521,5 +1740,292 @@ function(input, output, session) {
         len <- length(unique(dset[which(dset$INAME==input$cc_2 & dset$PRR>=quantile(class_dat_global()$PRR, input$pcentile_input/100)),])$PT_TERM)
         paste("Count: ", len)
     })
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    data.sel <- reactiveValues(df=NULL)
+    #     
+    # observeEvent(input$data, {
+    #     req(!is.null(input$data))
+    #     # data.sel$df <- as.data.frame(obj[[input$data]])
+    #     process(obj[[input$data]])
+    # })  
+    observeEvent(input$heat_file, {
+        req(input$heat_file)
+        tryCatch(
+            {
+                process(readLines(input$heat_file$datapath)) # CHANGED
+            },
+            error = function(e) {
+                # return a safeError if a parsing error occurs
+                stop(safeError(e))
+            }
+        )
+    })
+    
+    observeEvent(input$class_choices, ignoreInit=TRUE, {
+        print(input$class_choices)
+        # print(dset$INAME[which(dset$ATC1==input$class_choices)])
+        process(unique(dset$INAME[which(dset$ATC1==input$class_choices |  dset$ATC2==input$class_choices | dset$ATC3==input$class_choices | dset$ATC4==input$class_choices)]))
+    })
+    
+    observeEvent(input$check_drugs, {
+        if(length(input$check_drugs)>2) process(input$check_drugs)
+    })
+    
+    process <- function(drugs){
+        print(drugs)
+        print(mp[["TRIAMTERENE"]][["MENIERE'S DISEASE"]])
+        used <- new.env(hash = TRUE)  # map for used pt terms
+        min_prr=input$min_prr_input
+        pt=c();
+        x <- NULL
+        num_pt=0;
+        for(ptt in unique(dset$PT_TERM)){
+            if(length(used[[ptt]])>0) next;
+            prrs=c()
+            # print(paste("PT", ptt))
+            for(drug in drugs){
+                # print(drug)
+                # print(length(dset$PRR[which(dset$INAME==drug & dset$PT_TERM==ptt)])>0)
+                if(length(mp[[drug]][[ptt]])==0) next;
+                if(mp[[drug]][[ptt]]>=min_prr) prrs=c(prrs, mp[[drug]][[ptt]])
+                else break;
+            }
+            used[[ptt]]=TRUE;
+            # print(length(prrs))
+            if(length(prrs)==length(drugs)){
+                num_pt=num_pt+1;
+                x=rbind(x, prrs);
+                pt=c(pt, ptt);
+            }
+        }
+        if(num_pt<2){
+            showNotification(paste("Not enough PT Terms with minimum PRR over ", input$min_prr_input), closeButton = TRUE,
+                             type = "error")
+            return()
+        }
+        
+        mat<-matrix(nrow=num_pt, ncol=length(drugs))
+        rownames(mat)=pt
+        colnames(mat)=drugs
+        print(num_pt)
+        # print(length(drugs))
+        
+        for(i in 1:num_pt){
+            for(j in 1:length(drugs)){
+                mat[i, j]=x[i, j]
+            }
+        }
+        
+        print(mat)
+        data.sel$df <- mat
+    }
+    
+    shiny::observeEvent(data.sel$df,{
+        output$sample<-shiny::renderUI({
+            list(
+                shiny::column(4,shiny::textInput(inputId = 'setSeed',label = 'Seed',value = sample(1:10000,1))),
+                shiny::column(4,shiny::numericInput(inputId = 'selRows',label = 'Number of Rows',min=1,max=pmin(500,nrow(data.sel$df)),value = pmin(500,nrow(data.sel$df)))),
+                shiny::column(4,shiny::selectizeInput('selCols','Columns Subset',choices = names(data.sel$df),multiple=TRUE))
+            )
+        })
+    })
+    
+    output$colUI<-shiny::renderUI({
+        colSel='Vidiris'
+        
+        shiny::selectizeInput(inputId ="pal", label ="Select Color Palette",
+                              choices = c('Vidiris (Sequential)'="viridis",
+                                          'Magma (Sequential)'="magma",
+                                          'Plasma (Sequential)'="plasma",
+                                          'Inferno (Sequential)'="inferno",
+                                          'Magma (Sequential)'="magma",
+                                          'Magma (Sequential)'="magma",
+                                          
+                                          'RdBu (Diverging)'="RdBu",
+                                          'RdYlBu (Diverging)'="RdYlBu",
+                                          'RdYlGn (Diverging)'="RdYlGn",
+                                          'BrBG (Diverging)'="BrBG",
+                                          'Spectral (Diverging)'="Spectral",
+                                          
+                                          'BuGn (Sequential)'='BuGn',
+                                          'PuBuGn (Sequential)'='PuBuGn',
+                                          'YlOrRd (Sequential)'='YlOrRd',
+                                          'Heat (Sequential)'='heat.colors',
+                                          'Grey (Sequential)'='grey.colors'),
+                              selected=colSel)
+    })
+    
+    shiny::observeEvent({data.sel$df},{
+        output$colRng=shiny::renderUI({
+            
+            rng=range(data.sel$df,na.rm = TRUE)
+            
+            n_data = nrow(data.sel$df)
+            
+            min_min_range = -Inf
+            min_max_range = rng[1]
+            min_value = rng[1]
+            
+            max_min_range = rng[2]
+            max_max_range = Inf
+            max_value = rng[2]
+            
+            a_good_step = 0.1 # (max_range-min_range) / n_data
+            
+            list(
+                shiny::numericInput("colorRng_min", "Set Color Range (min)", value = min_value, min = min_min_range, max = min_max_range, step = a_good_step),
+                shiny::numericInput("colorRng_max", "Set Color Range (max)", value = max_value, min = max_min_range, max = max_max_range, step = a_good_step)
+            )
+            
+        })  
+    })
+    
+    
+    interactiveHeatmap<- shiny::reactive({
+        req(!is.null(data.sel$df))
+        data.in=data.sel$df
+        
+        
+        ss_num =  sapply(data.in, is.numeric) # in order to only transform the numeric values
+        
+        
+        #if(!is.null(input$tables_true_search_columns)) 
+        #  data.in=data.in[activeRows(input$tables_true_search_columns,data.in),]
+        if(input$colRngAuto){
+            ColLimits=NULL 
+        }else{
+            ColLimits=c(input$colorRng_min, input$colorRng_max)
+        }
+        
+        distfun_row = function(x) stats::dist(x, method = input$distFun_row)
+        distfun_col =  function(x) stats::dist(x, method = input$distFun_col)
+        
+        hclustfun_row = function(x) stats::hclust(x, method = input$hclustFun_row)
+        hclustfun_col = function(x) stats::hclust(x, method = input$hclustFun_col)
+        print(data.in)
+        p <- heatmaply::heatmaply(data.in,
+                                  main = input$main,xlab = input$xlab,ylab = rownames(data.in)[input$ylab],
+                                  row_text_angle = input$row_text_angle,
+                                  column_text_angle = input$column_text_angle,
+                                  dendrogram = input$dendrogram,
+                                  branches_lwd = input$branches_lwd,
+                                  seriate = input$seriation,
+                                  colors=eval(parse(text=paste0(input$pal,'(',input$ncol,')'))),
+                                  distfun_row =  distfun_row,
+                                  hclustfun_row = hclustfun_row,
+                                  distfun_col = distfun_col,
+                                  hclustfun_col = hclustfun_col,
+                                  k_col = input$c, 
+                                  k_row = input$r,
+                                  limits = ColLimits) %>% 
+            plotly::layout(margin = list(l = input$l, b = input$b), xaxis = list(tickfont = list(size = 7)))
+        
+        p$elementId <- NULL
+        
+        p
+        
+    })
+    
+    shiny::observeEvent(data.sel$df,{
+        output$heatout <- plotly::renderPlotly({
+            interactiveHeatmap()
+        })
+    })
+    
+    output$tables=shiny::renderDataTable(data.sel$df,
+                                         options = list(
+                                             dom = 't',
+                                             buttons = c('copy', 'csv', 'excel', 'pdf', 'print','colvis'),
+                                             colReorder = TRUE,
+                                             scrollX = TRUE,
+                                             fixedColumns = TRUE,
+                                             fixedHeader = TRUE,
+                                             deferRender = TRUE,
+                                             scrollY = 500,
+                                             scroller = TRUE
+                                         ))
+    
+    #Clone Heatmap ----
+    shiny::observeEvent({interactiveHeatmap()},{
+        h<-interactiveHeatmap()
+        
+        l<-list(main = input$main,xlab = input$xlab,ylab = input$ylab,
+                row_text_angle = input$row_text_angle,
+                column_text_angle = input$column_text_angle,
+                dendrogram = input$dendrogram,
+                branches_lwd = input$branches_lwd,
+                seriate = input$seriation,
+                colors=paste0(input$pal,'(',input$ncol,')'),
+                distfun_row =  input$distFun_row,
+                hclustfun_row = input$hclustFun_row,
+                distfun_col = input$distFun_col,
+                hclustfun_col = input$hclustFun_col,
+                k_col = input$c, 
+                k_row = input$r,
+                limits = paste(c(input$colorRng_min, input$colorRng_max),collapse=',')
+        )
+        
+        
+        l=data.frame(Parameter=names(l),Value=do.call('rbind',l),row.names = NULL,stringsAsFactors = FALSE)
+        l[which(l$Value==''),2]='NULL'
+        paramTbl=print(xtable::xtable(l),type = 'html',include.rownames=FALSE,print.results = FALSE,html.table.attributes = c('border=0'))
+        
+        
+        h$width='100%'
+        h$height='800px'
+        s<-htmltools::tags$div(style="position: relative; bottom: 5px;",
+                               htmltools::HTML(paramTbl),
+                               htmltools::tags$em('This heatmap visualization was created using',
+                                                  htmltools::tags$a(href="https://github.com/yonicd/shinyHeatmaply/",target="_blank",'shinyHeatmaply'),
+                                                  Sys.time()
+                               )
+        )
+        
+        output$downloadData <- shiny::downloadHandler(
+            filename = function() {
+                paste0("heatmaply-", strftime(Sys.time(),'%Y%m%d_%H%M%S'), ".html")
+            },
+            content = function(file) {
+                libdir <- paste0(tools::file_path_sans_ext(basename(file)),"_files")
+                
+                htmltools::save_html(htmltools::browsable(htmltools::tagList(h,s)),file=file,libdir = libdir)
+                
+                if (!rmarkdown::pandoc_available()) {
+                    stop("Saving a widget with selfcontained = TRUE requires pandoc. For details see:\n", 
+                         "https://github.com/rstudio/rmarkdown/blob/master/PANDOC.md")
+                }
+                
+                rmarkdown::pandoc_self_contained_html(file, file)
+                unlink(libdir, recursive = TRUE)
+            }
+        )
+    })
+    
+    output$dloadheat <- downloadHandler(
+        filename = function(){
+            paste("Cluster Matrix", input$downloadTypeHeat)
+        },
+        content = function(file){
+            if(input$downloadTypeHeat == ".csv") {
+                write.csv(as.data.frame(data.sel$df), file)
+            } else if(input$downloadTypeHeat == ".json") {
+                exportJSON <- toJSON(data.sel$df)
+                write(exportJSON, file)
+            } else if(input$downloadTypeHeat == ".xlsx") {
+                write_xlsx(data.sel$df, path=file)
+            } else if(input$downloadTypeHeat == ".txt") {
+                write.table(data.sel$df, file, row.names=FALSE)
+            }
+        }
+        
+    )
 }
 
