@@ -59,7 +59,8 @@ tagList(
                 menuItem("Home", tabName="intro"),
                 menuItem("Compare Adverse Events", tabName="compare_ae"),
                 menuItem("Compare Substances", tabName = "compare_subs"),
-                menuItem("Class Comparison", tabName="class_comp")
+                menuItem("Class Comparison", tabName="class_comp"),
+                menuItem("Clustering", tabName="heatmap")
             )
         ),
         
@@ -83,7 +84,12 @@ tagList(
                         fluidRow(
                             column(width = 6,
                                    box(id= "intro-pie", width = NULL, status="warning",
-                                       solidHeader = TRUE, plotlyOutput("pie_chart")),
+                                       solidHeader = TRUE, 
+                                       actionButton("pop_pie", label="", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: right"), 
+                                       bsModal("pop_pie_modal", "", trigger="pop_pie", size="large", plotlyOutput("pie_chart2")),
+                                       tags$br(), tags$br(),
+                                       plotlyOutput("pie_chart")
+                                       ),
                                    box(id="table-box", title="Summary Statistics", width=NULL, status="primary",
                                        solidHeader=T, dataTableOutput("sum_table"))
                                    
@@ -141,10 +147,13 @@ tagList(
                                        width = NULL,
                                        tabPanel("Two AE", div(
                                            actionButton("dt_open1", "Data Table"),
+                                           actionButton("pop_scatterPlot", label="", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: right"), 
+                                           bsModal("scatterPlot_modal", "", trigger="pop_scatterPlot", size="large", plotOutput("scatterPlot12")),
                                            style = "position:relative",
                                            plotOutput("scatterPlot", 
                                                       hover = hoverOpts("plot_hover"),
                                                       click = clickOpts(id = "plot_click")),
+                                           
                                            uiOutput("hover_info"),
                                            uiOutput("click_info"),
                                            textOutput('cor1a'),
@@ -198,6 +207,8 @@ tagList(
                                                 tags$head(tags$style("#reset:hover { background-color: #8f8f8f}")),
                                                 tags$head(tags$style("#filt:hover { background-color:#45a340 }"))
                                                 ),
+                                                actionButton("pop_mult_ae1", label="", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: right"), 
+                                                bsModal("mult_ae1_modal", "", trigger="pop_mult_ae1", size="large", plotlyOutput("mult_ae12")),
                                                 withSpinner(plotlyOutput("mult_ae1"))
                                        )
                                        
@@ -231,6 +242,8 @@ tagList(
                                        tabPanel("Two Substances", div(
                                            style = "position:relative",
                                            actionButton("dt_open2", "Data Table"),
+                                           actionButton("pop_scatterPlot2", label="", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: right"), 
+                                           bsModal("scatterPlot2_modal", "", trigger="pop_scatterPlot2", size="large", plotOutput("scatterPlot22")),
                                            plotOutput("scatterPlot2", hover = hoverOpts("plot_hover2")),
                                            uiOutput("hover_coords"),
                                            textOutput('cor2'),
@@ -251,11 +264,10 @@ tagList(
                                                     label = "Compare With", status = "default", width = "100%",
                                                     checkboxGroupInput(inputId = "sub2", label = "Choose", choices = vars2)
                                                 ),
-                                                span("Showing correlations for substances with \u2265"),
-                                                div(style="display: inline-block;", numericInput("num_ae", label = NULL, value = 5, width = "55px", min=2, max=1000)),
-                                                span("correlated adverse events. "),
                                                 "Minimum adverse event count: ",
                                                 div(style="display: inline-block;", numericInput("min_ae", label = NULL, value = 10, width = "60px", min=5, max=100)),
+                                                actionButton("pop_subs_bar", label="", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: right"), 
+                                                bsModal("subs_bar_modal", "", trigger="pop_subs_bar", size="large", plotlyOutput("subs_bar2")),
                                                 withSpinner(plotlyOutput("subs_bar"))
                                        )
                                    )
@@ -283,23 +295,127 @@ tagList(
                         fluidRow(
                             column(id="column1", width=12,
                                    tabBox(width=NULL,
-                                     tabPanel("Correlations", div(style="overflow-x: scroll; position: relative", withSpinner(plotlyOutput("drug_cor")))),
-                                     tabPanel("Box Plots", status="success", div(style="overflow-x: scroll; position: relative", withSpinner(plotlyOutput("boxplots")))),
+                                     tabPanel("Correlations", div(style="overflow-x: scroll; position: relative", 
+                                                                  actionButton("pop_drug_cor", label="", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: right"), 
+                                                                  bsModal("drug_cor_modal", "", trigger="pop_drug_cor", size="large",div(style="overflow-x: scroll; position: relative",  plotlyOutput("drug_cor2"))),
+                                                                  tags$br(), tags$br(),
+                                                                  withSpinner(plotlyOutput("drug_cor")))),
+                                     tabPanel("Box Plots", status="success", div(style="overflow-x: scroll; position: relative", 
+                                                                                 actionButton("pop_boxplots", label="", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: right"), 
+                                                                                 bsModal("boxplots_modal", "", trigger="pop_boxplots", size="large", div(style="overflow-x: scroll; position: relative",plotlyOutput("boxplots2"))),
+                                                                                 tags$br(), tags$br(),
+                                                                                 withSpinner(plotlyOutput("boxplots")))),
                                      tabPanel("Histogram", width=12,
                                               splitLayout(  
-                                                       div(style="margin-top: 60px; overflow-x: hidden", plotlyOutput("histogram")),
+                                                       div(style="margin-top: 40px; overflow-x: hidden", 
+                                                           actionButton("pop_histogram", label="", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: right"), 
+                                                           bsModal("histogram_modal", "", trigger="pop_histogram", size="large", div(style="margin-top: 60px; overflow-x: hidden", plotlyOutput("histogram2"))),
+                                                           tags$br(), tags$br(),
+                                                           withSpinner(plotlyOutput("histogram"))),
                                                        div(uiOutput("drug_name"), tags$style(HTML("#drug_name{font-size: large; text-align: center}")), div(style="float: left; display:inline-block", numericInput("pcentile_input", "Percentile", value=95, step=.5, width="75px")),
                                                                                       div(style="display: inline-block", uiOutput("perc_val")), div(style="display: inline-block", uiOutput("perc_count")),
                                                        div(style="float:right", downloadButton("dload4_1", "Download")),
                                                        div(style="float:right", selectInput("downloadType4_1", label=NULL, choices=c("CSV"=".csv", "TXT"=".txt", "XLSX"=".xlsx", "JSON"=".json"), selected=".csv", width=80)),
                                                        DTOutput("drugperc")))
                                        ),
-                                     tabPanel("PRRs Sorted", div(style="width:30%", uiOutput("sortby4")), div(style="overflow-x: scroll; position: relative", withSpinner(plotlyOutput("bar4"))), status="warning")
+                                     tabPanel("PRRs Sorted", div(style="width:30%", uiOutput("sortby4")), div(style="overflow-x: scroll; position: relative", 
+                                                                                                              actionButton("pop_bar4", label="", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: right"), 
+                                                                                                              tags$br(), tags$br(),
+                                                                                                              bsModal("bar4_modal", "", trigger="pop_bar4", size="large", div(style="overflow-x: scroll; position: relative", plotlyOutput("bar42"))),
+                                                                                                              withSpinner(plotlyOutput("bar4"))), status="warning")
                                    )
                             )
                         )
+                ),
+                tabItem("heatmap", 
+                        fluidPage(
+                          shiny::sidebarLayout(
+                            shiny::sidebarPanel(
+                              numericInput("min_prr_input", "Minimum PRR (over all drugs)", min=0, max=500, value=5),
+                              htmltools::h4('Data'),
+                              fileInput("heat_file", "File Upload",
+                                        multiple = FALSE,
+                                        accept = c("text/csv",
+                                                   "text/comma-separated-values,text/plain",
+                                                   ".csv")),
+                              selectizeInput('class_choices', 'ATC Class', choices = list(
+                                "Level 1" = l1,
+                                "Level 2" = l2,
+                                "Level 3" = l3,
+                                "Level 4 "= l4), multiple = FALSE),
+                              tags$b("Create List"),
+                              dropdownBtn(
+                                label = "Select", status = "default", width = "100%",
+                                checkboxGroupInput(inputId = "check_drugs", label = "Select", choices = vars2)
+                              ),
+                              shiny::uiOutput('data'),
+                              shiny::conditionalPanel('input.showSample',shiny::uiOutput('sample')),
+                              # br(),
+                              
+                              htmltools::br(),htmltools::hr(),htmltools::h4('Row dendrogram'),
+                              shiny::column(width=6,shiny::selectizeInput("distFun_row", "Distance method", c(Euclidean="euclidean",Maximum='maximum',Manhattan='manhattan',Canberra='canberra',Binary='binary',Minkowski='minkowski'),selected = 'euclidean')),
+                              shiny::column(width=6,shiny::selectizeInput("hclustFun_row", "Clustering linkage", c(Complete= "complete",Single= "single",Average= "average",Mcquitty= "mcquitty",Median= "median",Centroid= "centroid",Ward.D= "ward.D",Ward.D2= "ward.D2"),selected = 'average')),
+                              shiny::column(width=12,shiny::sliderInput("r", "Number of Clusters", min = 1, max = 15, value = 2)),    
+                              #column(width=4,numericInput("r", "Number of Clusters", min = 1, max = 20, value = 2, step = 1)),   
+                              
+                              htmltools::br(),htmltools::hr(),htmltools::h4('Column dendrogram'),
+                              shiny::column(width=6,shiny::selectizeInput("distFun_col", "Distance method", c(Euclidean="euclidean",Maximum='maximum',Manhattan='manhattan',Canberra='canberra',Binary='binary',Minkowski='minkowski'),selected = 'euclidean')),
+                              shiny::column(width=6,shiny::selectizeInput("hclustFun_col", "Clustering linkage", c(Complete= "complete",Single= "single",Average= "average",Mcquitty= "mcquitty",Median= "median",Centroid= "centroid",Ward.D= "ward.D",Ward.D2= "ward.D2"),selected = 'average')),
+                              shiny::column(width=12,shiny::sliderInput("c", "Number of Clusters", min = 1, max = 15, value = 2)),
+                              #column(width=4,numericInput("c", "Number of Clusters", min = 1, max = 20, value = 2, step = 1)),    
+                              
+                              htmltools::br(),htmltools::hr(),  htmltools::h4('Additional Parameters'),
+                              
+                              shiny::column(3,shiny::checkboxInput('showColor','Color')),
+                              shiny::column(3,shiny::checkboxInput('showMargin','Layout')),
+                              shiny::column(3,shiny::checkboxInput('showDendo','Dendrogram')),
+                              htmltools::hr(),
+                              shiny::conditionalPanel('input.showColor==1',
+                                                      htmltools::hr(),
+                                                      htmltools::h4('Color Manipulation'),
+                                                      shiny::uiOutput('colUI'),
+                                                      shiny::sliderInput("ncol", "Set Number of Colors", min = 1, max = 256, value = 256),
+                                                      shiny::checkboxInput('colRngAuto','Auto Color Range',value = TRUE),
+                                                      shiny::conditionalPanel('!input.colRngAuto',shiny::uiOutput('colRng'))
+                              ),
+                              
+                              shiny::conditionalPanel('input.showDendo==1',
+                                                      htmltools::hr(),
+                                                      htmltools::h4('Dendrogram Manipulation'),
+                                                      shiny::selectInput('dendrogram','Dendrogram Type',choices = c("both", "row", "column", "none"),selected = 'both'),
+                                                      shiny::selectizeInput("seriation", "Seriation", c(OLO="OLO",GW="GW",Mean="mean",None="none"),selected = 'OLO'),
+                                                      shiny::sliderInput('branches_lwd','Dendrogram Branch Width',value = 0.6,min=0,max=5,step = 0.1)
+                              ),             
+                              
+                              shiny::conditionalPanel('input.showMargin==1',
+                                                      htmltools::hr(),
+                                                      htmltools::h4('Widget Layout'),
+                                                      shiny::column(4,shiny::textInput('main','Title','')),
+                                                      shiny::column(4,shiny::textInput('xlab','X Title','')),
+                                                      shiny::column(4,shiny::textInput('ylab','Y Title','')),
+                                                      shiny::sliderInput('row_text_angle','Row Text Angle',value = 0,min=0,max=180),
+                                                      shiny::sliderInput('column_text_angle','Column Text Angle',value = 45,min=0,max=180),
+                                                      shiny::sliderInput("l", "Set Margin Width", min = 0, max = 200, value = 130),
+                                                      shiny::sliderInput("b", "Set Margin Height", min = 0, max = 200, value = 40)
+                              )
+                            ),
+                            
+                            shiny::mainPanel(
+                              shiny::tabsetPanel(
+                                shiny::tabPanel("Heatmaply",
+                                                htmltools::tags$a(id = 'downloadData', class = paste("btn btn-default shiny-download-link",'mybutton'), href = "", target = "_blank", download = NA, shiny::icon("clone"), 'Download Heatmap as HTML'),
+                                                htmltools::tags$head(htmltools::tags$style(".mybutton{color:white;background-color:blue;} .skin-black .sidebar .mybutton{color: green;}") ),
+                                                plotly::plotlyOutput("heatout",height=paste0(plotHeight,'px'))
+                                ),
+                                shiny::tabPanel("Data",
+                                                div(selectInput("downloadTypeHeat", "Download As", c(".csv", ".txt", ".xlsx", ".json"), selected=".csv", width="60%"),
+                                                    downloadButton("dloadheat", "Download")),
+                                                shiny::dataTableOutput('tables')
+                                )
+                              ) 
+                            )
+                        ))
                 )
-                
             )
         )
     )
