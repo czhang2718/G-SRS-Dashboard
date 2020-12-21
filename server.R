@@ -271,8 +271,8 @@ function(input, output, session) {
     ptc_1 <- reactiveVal(value=10)
     
     # dt on plotly_click
-    observeEvent(event_data("plotly_click", source = "A"),  {
-        barData = event_data("plotly_click", source = "A");
+    observeEvent(event_data("plotly_click", source = "Aa"),  {
+        barData = event_data("plotly_click", source = "Aa");
         
         if(curr_level()==0){
             col = dset$ATC1;
@@ -539,7 +539,7 @@ function(input, output, session) {
         if(nrow(dat)>5) margin_size=160
         else margin_size=30
         plot_ly(dat, x = ~reorder(name, -cor), y = ~round(cor, digits = 2), type = "bar", color = ~cor>0, colors = c("#e82a2a", "#1b3fcf"), 
-                source = "A", name = "<extra><extra>") %>% 
+                source = "Aa", name = "<extra><extra>") %>% 
             layout(
                 yaxis = list(title = "Pearson&#39;s Correlation Coefficient"),
                 xaxis = list(title = "Adverse Event"),
@@ -558,7 +558,7 @@ function(input, output, session) {
         if(nrow(dat)>5) margin_size=160
         else margin_size=30
         plot_ly(dat, x = ~reorder(name, -cor), y = ~round(cor, digits = 2), type = "bar", color = ~cor>0, colors = c("#e82a2a", "#1b3fcf"), 
-                source = "A", name = "<extra><extra>") %>% 
+                source = "Aa", name = "<extra><extra>") %>% 
             layout(
                 yaxis = list(title = "Pearson&#39;s Correlation Coefficient"),
                 xaxis = list(title = "Adverse Event"),
@@ -1756,6 +1756,7 @@ function(input, output, session) {
     #     # data.sel$df <- as.data.frame(obj[[input$data]])
     #     process(obj[[input$data]])
     # })  
+    global_drugs=reactiveValues(dat=NULL)
     observeEvent(input$heat_file, {
         req(input$heat_file)
         tryCatch(
@@ -1772,59 +1773,64 @@ function(input, output, session) {
     observeEvent(input$class_choices, ignoreInit=TRUE, {
         print(input$class_choices)
         # print(dset$INAME[which(dset$ATC1==input$class_choices)])
-        process(unique(dset$INAME[which(dset$ATC1==input$class_choices |  dset$ATC2==input$class_choices | dset$ATC3==input$class_choices | dset$ATC4==input$class_choices)]))
+        x=unique(dset$INAME[which(dset$ATC1==input$class_choices |  dset$ATC2==input$class_choices | dset$ATC3==input$class_choices | dset$ATC4==input$class_choices)])
+        print(length(x)==0)
+        process(x)
     })
     
     observeEvent(input$check_drugs, {
-        if(length(input$check_drugs)>2) process(input$check_drugs)
+        process(input$check_drugs)
+    })
+    
+    
+    observeEvent(input$num_pt_input, {
+        process(global_drugs$dat)
     })
     
     process <- function(drugs){
-        print(drugs)
-        print(mp[["TRIAMTERENE"]][["MENIERE'S DISEASE"]])
-        used <- new.env(hash = TRUE)  # map for used pt terms
-        min_prr=input$min_prr_input
-        pt=c();
-        x <- NULL
-        num_pt=0;
-        for(ptt in unique(dset$PT_TERM)){
-            if(length(used[[ptt]])>0) next;
-            prrs=c()
-            # print(paste("PT", ptt))
-            for(drug in drugs){
-                # print(drug)
-                # print(length(dset$PRR[which(dset$INAME==drug & dset$PT_TERM==ptt)])>0)
-                if(length(mp[[drug]][[ptt]])==0) next;
-                if(mp[[drug]][[ptt]]>=min_prr) prrs=c(prrs, mp[[drug]][[ptt]])
-                else break;
-            }
-            used[[ptt]]=TRUE;
-            # print(length(prrs))
-            if(length(prrs)==length(drugs)){
-                num_pt=num_pt+1;
-                x=rbind(x, prrs);
-                pt=c(pt, ptt);
-            }
-        }
-        if(num_pt<2){
-            showNotification(paste("Not enough PT Terms with minimum PRR over ", input$min_prr_input), closeButton = TRUE,
+        global_drugs$dat=drugs
+        # print(drugs)
+        # print(mp[["TRIAMTERENE"]][["MENIERE'S DISEASE"]])
+        if(length(drugs)<2) {
+            showNotification("Not enough data for selected drugs", closeButton = TRUE,
                              type = "error")
-            return()
+            return();
         }
+        if(length(drugs)>100){
+            showNotification("Too many drugs", closeButton = TRUE,
+                             type = "error")
+            return();
+        }
+        num_pt=input$num_pt_input
+        ptmedprr=data.frame(pt=character(), medprr=numeric()) 
+        
+        for(ptt in unique(dset$PT_TERM)){
+            prrs=c()
+            for(drug in drugs){
+                if(length(mp[[drug]][[ptt]])==0) prrs=c(prrs, 0)
+                else prrs=c(prrs, mp[[drug]][[ptt]])
+            }
+            df=data.frame(ptt, median(prrs))
+            names(df)=c("pt", "medprr")
+            ptmedprr=rbind(ptmedprr, df)
+        }
+        ptmedprr = ptmedprr[order(-ptmedprr$medprr),] # should sort by medprr
         
         mat<-matrix(nrow=num_pt, ncol=length(drugs))
-        rownames(mat)=pt
+        rownames(mat)=ptmedprr$pt[1:num_pt]
         colnames(mat)=drugs
-        print(num_pt)
-        # print(length(drugs))
         
         for(i in 1:num_pt){
             for(j in 1:length(drugs)){
-                mat[i, j]=x[i, j]
+                if(length(mp[[drugs[j]]][[ptmedprr$pt[i]]])==0){
+                    mat[i, j]=4
+                }
+                else{
+                    mat[i, j]=mp[[drugs[j]]][[ptmedprr$pt[i]]]
+                }
             }
         }
         
-        print(mat)
         data.sel$df <- mat
     }
     
@@ -1839,15 +1845,13 @@ function(input, output, session) {
     })
     
     output$colUI<-shiny::renderUI({
-        colSel='Vidiris'
+        colSel="viridis"
         
         shiny::selectizeInput(inputId ="pal", label ="Select Color Palette",
                               choices = c('Vidiris (Sequential)'="viridis",
                                           'Magma (Sequential)'="magma",
                                           'Plasma (Sequential)'="plasma",
                                           'Inferno (Sequential)'="inferno",
-                                          'Magma (Sequential)'="magma",
-                                          'Magma (Sequential)'="magma",
                                           
                                           'RdBu (Diverging)'="RdBu",
                                           'RdYlBu (Diverging)'="RdYlBu",
@@ -1860,7 +1864,7 @@ function(input, output, session) {
                                           'YlOrRd (Sequential)'='YlOrRd',
                                           'Heat (Sequential)'='heat.colors',
                                           'Grey (Sequential)'='grey.colors'),
-                              selected=colSel)
+                              selected="viridis")
     })
     
     shiny::observeEvent({data.sel$df},{
@@ -1910,7 +1914,7 @@ function(input, output, session) {
         
         hclustfun_row = function(x) stats::hclust(x, method = input$hclustFun_row)
         hclustfun_col = function(x) stats::hclust(x, method = input$hclustFun_col)
-        print(data.in)
+        # print(data.in)
         p <- heatmaply::heatmaply(data.in,
                                   main = input$main,xlab = input$xlab,ylab = rownames(data.in)[input$ylab],
                                   row_text_angle = input$row_text_angle,
@@ -1926,7 +1930,7 @@ function(input, output, session) {
                                   k_col = input$c, 
                                   k_row = input$r,
                                   limits = ColLimits) %>% 
-            plotly::layout(margin = list(l = input$l, b = input$b), xaxis = list(tickfont = list(size = 7)))
+            plotly::layout(margin = list(l = input$l, b = input$b), xaxis = list(tickfont = list(size = min(11, 350/length(global_drugs$dat)))))
         
         p$elementId <- NULL
         
