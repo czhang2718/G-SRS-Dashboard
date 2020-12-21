@@ -53,7 +53,24 @@ tagList(
         h1(id="loading_text", "G-SRS Data Explorer"),
         HTML("<button id='startbutton'>Start</button>")),
     hidden(div(id="main-content", dashboardPage(
-        dashboardHeader(title = "G-SRS Dashboard"),
+        dashboardHeader(title = "G-SRS Dashboard",
+                        dropdownMenu(type = "messages", icon=icon("question-circle"), headerText = "",
+                                     messageItem(
+                                       from = "PRR",
+                                       icon=icon("chart-bar"),
+                                       message = div(style="white-space:normal;", "[definition of PRR]Drugs in this database are chemical substance used in the treatment, cure, prevention, or diagnosis of disease")
+                                     ),
+                                     messageItem(
+                                       from = "Drug",
+                                       message = "Drugs in this database are chemical substance used in the treatment, cure, prevention, or diagnosis of disease",
+                                       icon = icon("prescription-bottle")
+                                     ),
+                                     messageItem(
+                                       from = "Adverse Event",
+                                       message = "An adverse event is an unanticipated experience or side effect associated with the use of a drug or therapeutic biologic in humans, whether or not it is considered related to the product.",
+                                       icon = icon("lungs-virus")
+                                     ))
+                        ),
         dashboardSidebar(
             sidebarMenu(
                 menuItem("Home", tabName="intro"),
@@ -62,6 +79,7 @@ tagList(
                 menuItem("Class Comparison", tabName="class_comp"),
                 menuItem("Clustering", tabName="heatmap")
             )
+            
         ),
         
         dashboardBody(
@@ -308,7 +326,7 @@ tagList(
                                      tabPanel("Histogram", width=12,
                                               splitLayout(  
                                                        div(style="margin-top: 40px; overflow-x: hidden", 
-                                                           actionButton("pop_histogram", label="", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: right"), 
+                                                           actionButton("pop_histogram", label="", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: left"), 
                                                            bsModal("histogram_modal", "", trigger="pop_histogram", size="large", div(style="margin-top: 60px; overflow-x: hidden", plotlyOutput("histogram2"))),
                                                            tags$br(), tags$br(),
                                                            withSpinner(plotlyOutput("histogram"))),
@@ -331,7 +349,7 @@ tagList(
                         fluidPage(
                           shiny::sidebarLayout(
                             shiny::sidebarPanel(
-                              numericInput("min_prr_input", "Minimum PRR (over all drugs)", min=0, max=500, value=5),
+                              numericInput("num_pt_input", "Number of PT TERMs", min=1, max=100, value=20),
                               htmltools::h4('Data'),
                               fileInput("heat_file", "File Upload",
                                         multiple = FALSE,
@@ -355,13 +373,13 @@ tagList(
                               htmltools::br(),htmltools::hr(),htmltools::h4('Row dendrogram'),
                               shiny::column(width=6,shiny::selectizeInput("distFun_row", "Distance method", c(Euclidean="euclidean",Maximum='maximum',Manhattan='manhattan',Canberra='canberra',Binary='binary',Minkowski='minkowski'),selected = 'euclidean')),
                               shiny::column(width=6,shiny::selectizeInput("hclustFun_row", "Clustering linkage", c(Complete= "complete",Single= "single",Average= "average",Mcquitty= "mcquitty",Median= "median",Centroid= "centroid",Ward.D= "ward.D",Ward.D2= "ward.D2"),selected = 'average')),
-                              shiny::column(width=12,shiny::sliderInput("r", "Number of Clusters", min = 1, max = 15, value = 2)),    
+                              shiny::column(width=12,shiny::sliderInput("r", "Number of Clusters", min = 1, max = 9, value = 2)),    
                               #column(width=4,numericInput("r", "Number of Clusters", min = 1, max = 20, value = 2, step = 1)),   
                               
                               htmltools::br(),htmltools::hr(),htmltools::h4('Column dendrogram'),
                               shiny::column(width=6,shiny::selectizeInput("distFun_col", "Distance method", c(Euclidean="euclidean",Maximum='maximum',Manhattan='manhattan',Canberra='canberra',Binary='binary',Minkowski='minkowski'),selected = 'euclidean')),
                               shiny::column(width=6,shiny::selectizeInput("hclustFun_col", "Clustering linkage", c(Complete= "complete",Single= "single",Average= "average",Mcquitty= "mcquitty",Median= "median",Centroid= "centroid",Ward.D= "ward.D",Ward.D2= "ward.D2"),selected = 'average')),
-                              shiny::column(width=12,shiny::sliderInput("c", "Number of Clusters", min = 1, max = 15, value = 2)),
+                              shiny::column(width=12,shiny::sliderInput("c", "Number of Clusters", min = 1, max = 9, value = 2)),
                               #column(width=4,numericInput("c", "Number of Clusters", min = 1, max = 20, value = 2, step = 1)),    
                               
                               htmltools::br(),htmltools::hr(),  htmltools::h4('Additional Parameters'),
@@ -405,7 +423,7 @@ tagList(
                                 shiny::tabPanel("Heatmaply",
                                                 htmltools::tags$a(id = 'downloadData', class = paste("btn btn-default shiny-download-link",'mybutton'), href = "", target = "_blank", download = NA, shiny::icon("clone"), 'Download Heatmap as HTML'),
                                                 htmltools::tags$head(htmltools::tags$style(".mybutton{color:white;background-color:blue;} .skin-black .sidebar .mybutton{color: green;}") ),
-                                                plotly::plotlyOutput("heatout",height=paste0(plotHeight,'px'))
+                                                withSpinner(plotly::plotlyOutput("heatout",height=paste0(plotHeight,'px')))
                                 ),
                                 shiny::tabPanel("Data",
                                                 div(selectInput("downloadTypeHeat", "Download As", c(".csv", ".txt", ".xlsx", ".json"), selected=".csv", width="60%"),
