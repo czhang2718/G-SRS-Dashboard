@@ -26,7 +26,7 @@ library(xml2)
 
 function(input, output, session) {
     
-    # ------------------------------------------------INTRO PG--------------------------------------------------
+    # ------------------------------------------------INTRO PG 1--------------------------------------------------
     load_data()
     
     onclick("startbutton",
@@ -39,7 +39,7 @@ function(input, output, session) {
         #adverse events
         
         aes = dset[which(dset$INAME == input$intro_drug), c(3, 7, 11)] %>% distinct();
-        # aes = dset[which(dset$INAME == input$intro_drug), c(3, 7, 11)] %>% distinct(); Change to use column names
+        # aes=c(dset$PT_TERM[which(dset$INAME==input$intro_drug)], dset$PT_COUNT[which(dset$INAME==input$intro_drug)], dset$PRR[which(dset$INAME==input$intro_drug)]) %>% distinct();
         shiny::validate(
             need(nrow(aes)>0, 'No Data Available')
         )
@@ -142,7 +142,7 @@ function(input, output, session) {
         df <- data.frame("label"=c("<1", "1-5", "5-10", "10-100", ">100"), "vals" = c(g1, g2, g3, g4, g5))
         plot_ly(df, labels=~label, values=~vals, key=c("<1", "1-5", "5-10", "10-100", ">100"), type="pie", source="E", hovertemplate="PRR: %{label} <br> %{value}<extra></extra>", name="") %>%
             plotly::config(modeBarButtons = list(list("toImage")), displaylogo = FALSE) %>% 
-            layout(autosize = T, height = 250, legend=list(title=list(text='<b> PRR </b>')))
+            layout(autosize = T, height = 230, legend=list(title=list(text='<b> PRR </b>')))
     })
     
     output$pie_chart2 <- renderPlotly({
@@ -158,7 +158,7 @@ function(input, output, session) {
         df <- data.frame("label"=c("<1", "1-5", "5-10", "10-100", ">100"), "vals" = c(g1, g2, g3, g4, g5))
         plot_ly(df, labels=~label, values=~vals, key=c("<1", "1-5", "5-10", "10-100", ">100"), type="pie", source="E", hovertemplate="PRR: %{label} <br> %{value}<extra></extra>", name="") %>%
             plotly::config(modeBarButtons = list(list("toImage")), displaylogo = FALSE) %>% 
-            layout(autosize = T, height = 250, legend=list(title=list(text='<b> PRR </b>')))
+            layout(autosize = T, height = 230, legend=list(title=list(text='<b> PRR </b>')))
     })
     
     observeEvent(event_data("plotly_click", source = "E"), {
@@ -257,7 +257,227 @@ function(input, output, session) {
         dt
     })
     
-    # -------------------------------------------------PAGE 2---------------------------------------------------
+    # ------------------------------------------------INTRO PG 2--------------------------------------------------
+    #right-side vertical bar chart
+    output$top_subs <- renderPlotly({
+        #adverse events
+        
+        aes = dset[which(dset$PT_TERM == input$intro_ae), c(2, 7, 11)] %>% distinct();
+        
+        shiny::validate(
+            need(nrow(aes)>0, 'No Data Available')
+        )
+        if(input$sort_by2 == "PT Count"){
+            plot_ly(aes, x=~PT_COUNT, y=~reorder(INAME, PT_COUNT),type = "bar", orientation = "h", height = 12*nrow(aes), width="100%",
+                    color = I("#f5c767"), source = "C") %>%
+                layout(bargap=.1, showlegend = FALSE, autosize=TRUE, yaxis = list(title="", automargin = TRUE, tickfont = list(size = 8)), 
+                       xaxis = list(title="Number of Adverse Events", side="top")) %>%
+                plotly::config(modeBarButtons = list(list("toImage")), displaylogo = FALSE)
+        }
+        else {
+            plot_ly(aes, x=~PRR, y=~reorder(INAME, PRR), type = "bar", orientation = "h", height = 12*nrow(aes), width="100%",
+                    color=I("#821e4e"), source = "D") %>%
+                layout(bargap=.1, showlegend = FALSE, autosize=TRUE, yaxis = list(title="", automargin = TRUE, tickfont = list(size = 8)), 
+                       xaxis = list(automargin=TRUE, side="top")) %>%
+                plotly::config(modeBarButtons = list(list("toImage")), displaylogo = FALSE)
+        }
+    })
+    
+    #download buttons
+    output$dload2 <- downloadHandler(
+        
+        filename = function(){
+            paste(input$intro_ae, "-related substances", input$downloadType6)
+        },
+        content = function(file){
+            if(input$downloadType6 == ".csv") {
+                write.csv(dset[which(dset$PT_TERM == input$intro_ae), c(2, 7, 11)], file, row.names = FALSE)
+            } else if(input$downloadType6 == ".json") {
+                exportJSON <- toJSON(dset[which(dset$PT_TERM == input$intro_ae), c(2, 7, 11)])
+                write(exportJSON, file)
+            } else if(input$downloadType6 == ".xlsx") {
+                write_xlsx(dset[which(dset$PT_TERM == input$intro_ae), c(2, 7, 11)], path=file)
+            } else if(input$downloadType6 == ".txt") {
+                write.table(dset[which(dset$PT_TERM == input$intro_ae), c(2, 7, 11)], file, row.names=FALSE)
+            }
+        }
+        
+    )
+    
+    # custon color bar
+    my_color_bar2 <- function (color = "orange", fixedWidth=180,...) 
+    {
+        formatter("span", style = function(x) style(display = "inline-block", 
+                                                    direction = "rtl", `border-radius` = "4px", `padding-right` = "2px", 
+                                                    `background-color` = csscolor(color), width = paste(fixedWidth*proportion(x),"px",sep=""), 
+                                                    ...))
+    }
+    
+    
+    #pop up formattable dt on maximize button
+    observeEvent(input$popdt2, {
+        aes = dset[which(dset$PT_TERM == input$intro_ae), c(2, 7, 11)]
+        if(nrow(aes)==0){
+            showNotification("Not enough data available", type="warning")
+        }
+        shiny::validate(
+            need(nrow(aes)>0, "No Data Available")
+        )
+        aes$PT_COUNT = round(aes$PT_COUNT, 2)
+        aes$PRR = round(aes$PRR, 2)
+        
+        if(input$sort_by2=="PT Count"){
+            aes <- aes[order(-aes$PT_COUNT),]
+            df <- data.frame(ae=aes$INAME, count=aes$PT_COUNT, prr=aes$PRR)
+            colnames(df) <- c("Substance", "Count", "PRR")
+        }
+        
+        else{
+            aes <- aes[order(-aes$PRR),]
+            df <- data.frame(ae=aes$INAME, count=aes$PT_COUNT, prr=aes$PRR)
+            colnames(df) <- c("Substance", "Count", "PRR")
+        }
+        
+        showModal(modalDialog(
+            size = "l",
+            easyClose = TRUE,
+            title=paste0(input$intro_ae, "-related Substances"),
+            div(renderFormattable({formattable(df, align = c("l",rep("r", ncol(df) - 1)),
+                                               list(Count=my_color_bar2(color="#fad584"), PRR=my_color_bar(color="#cf4085"))
+            )}), style="max-height: 510px; overflow-y: scroll"),
+            footer = tagList(
+                modalButton("Exit")
+            )
+        ))
+        
+    })
+    
+    #pie
+    output$pie_chart22 <- renderPlotly({
+        total_rows = nrow(dset[which(dset$PT_TERM == input$intro_ae),])
+        shiny::validate(
+            need(total_rows>0, "No Data Available")
+        )
+        g1 = nrow(dset[which(dset$PT_TERM == input$intro_ae & dset$PRR<1),])
+        g2 = nrow(dset[which(dset$PT_TERM == input$intro_ae & dset$PRR>=1 & dset$PRR<5),])
+        g3 = nrow(dset[which(dset$PT_TERM == input$intro_ae & dset$PRR>=5 & dset$PRR<10),])
+        g4 = nrow(dset[which(dset$PT_TERM == input$intro_ae & dset$PRR>=10 & dset$PRR<100),])
+        g5 = nrow(dset[which(dset$PT_TERM == input$intro_ae & dset$PRR>=100),])
+        df <- data.frame("label"=c("<1", "1-5", "5-10", "10-100", ">100"), "vals" = c(g1, g2, g3, g4, g5))
+        plot_ly(df, labels=~label, values=~vals, key=c("<1", "1-5", "5-10", "10-100", ">100"), type="pie", source="P", hovertemplate="PRR: %{label} <br> %{value}<extra></extra>", name="") %>%
+            plotly::config(modeBarButtons = list(list("toImage")), displaylogo = FALSE) %>% 
+            layout(legend=list(title=list(text='<b> PRR </b>')))
+    })
+    
+    output$pie_chart21 <- renderPlotly({
+        total_rows = nrow(dset[which(dset$PT_TERM == input$intro_ae),])
+        shiny::validate(
+            need(total_rows>0, "No Data Available")
+        )
+        g1 = nrow(dset[which(dset$PT_TERM == input$intro_ae & dset$PRR<1),])
+        g2 = nrow(dset[which(dset$PT_TERM == input$intro_ae & dset$PRR>=1 & dset$PRR<5),])
+        g3 = nrow(dset[which(dset$PT_TERM == input$intro_ae & dset$PRR>=5 & dset$PRR<10),])
+        g4 = nrow(dset[which(dset$PT_TERM == input$intro_ae & dset$PRR>=10 & dset$PRR<100),])
+        g5 = nrow(dset[which(dset$PT_TERM == input$intro_ae & dset$PRR>=100),])
+        df <- data.frame("label"=c("<1", "1-5", "5-10", "10-100", ">100"), "vals" = c(g1, g2, g3, g4, g5))
+        plot_ly(df, labels=~label, values=~vals, key=c("<1", "1-5", "5-10", "10-100", ">100"), type="pie", source="P", hovertemplate="PRR: %{label} <br> %{value}<extra></extra>", name="") %>%
+            plotly::config(modeBarButtons = list(list("toImage")), displaylogo = FALSE) %>% 
+            layout(autosize = T, height = 230, legend=list(title=list(text='<b> PRR </b>')))
+    })
+    
+    observeEvent(event_data("plotly_click", source = "P"), {
+        pieData = event_data("plotly_click", source = "P")
+        if(pieData$key=="<1") tableDat = dset[which(dset$PT_TERM == input$intro_ae & dset$PRR<1), c(2, 7, 11)]
+        else if(pieData$key=="1-5") tableDat = dset[which(dset$PT_TERM == input$intro_ae & dset$PRR>=1 & dset$PRR<5), c(2, 7, 11)]
+        else if(pieData$key=="5-10") tableDat = dset[which(dset$PT_TERM == input$intro_ae & dset$PRR>=5 & dset$PRR<10), c(2, 7, 11)]
+        else if(pieData$key=="10-100") tableDat = dset[which(dset$PT_TERM == input$intro_ae & dset$PRR>=10 & dset$PRR<100), c(2, 7, 11)]
+        else if(pieData$key==">100") tableDat = dset[which(dset$PT_TERM == input$intro_ae & dset$PRR>=100), c(2, 7, 11)]
+        
+        output$pie_data2 <- renderDataTable({datatable(tableDat, selection = "none", rownames=FALSE, options = list(
+            lengthMenu = list(c(10, 25, 50, -1), c("10", "25", "50", "All")),
+            autoWidth = FALSE,
+            width="100%",
+            scrollX = TRUE,
+            scrollY = '350px')
+        )})
+        
+        output$download_7 <- downloadHandler(
+            filename = function(){
+                paste(input$intro_ae, "-related substances, PRR ", pieData$key, input$downloadType7)
+            },
+            content = function(file){
+                if(input$downloadType7 == ".csv") {
+                    write.csv(tableDat, file, row.names = FALSE)
+                } else if(input$downloadType7 == ".json") {
+                    exportJSON <- toJSON(tableDat)
+                    write(exportJSON, file)
+                } else if(input$downloadType7 == ".xlsx") {
+                    write_xlsx(tableDat, path=file)
+                } else if(input$downloadType7 == ".txt") {
+                    write.table(tableDat, file, row.names=FALSE)
+                }
+            }
+            
+        )
+        
+        showModal(modalDialog(
+            size = "l",
+            title = paste0(input$intro_drug, "- related adverse events with PRR ", pieData$key),
+            div(style="float:right", downloadButton("download_7", "Download")),
+            div(style="float:right", selectInput("downloadType7", label=NULL, choices=c("CSV"=".csv", "TXT"=".txt", "XLSX"=".xlsx", "JSON"=".json"), selected=".csv", width=80)),
+            
+            tags$br(),
+            tags$br(),
+            DT::dataTableOutput("pie_data2"),
+            easyClose = TRUE,
+            footer = tagList(
+                modalButton("Exit")
+            )
+        ))
+        
+    })
+    
+    #summary table
+    output$sum_table2 <- renderDT({
+        
+        #mean, median, standard deviation, count, iqr
+        dat1 <- dset$PRR[which(dset$PT_TERM == input$intro_ae)]
+        q1_prr <- round(quantile(dat1)[2], 2)
+        median_prr = round(median(dat1), 2)
+        q3_prr <- round(quantile(dat1)[4], 2)
+        mean_prr <- round(mean(dat1), 2)
+        std_prr <- round(sd(dat1), 2)
+        iqr_prr <- round(IQR(dat1), 2)
+        min_prr <- round(min(dat1), 2)
+        max_prr <- round(max(dat1), 2)
+        
+        dat2 <- dset$PT_COUNT[which(dset$PT_TERM == input$intro_ae)]
+        q1_cnt <- round(quantile(dat2)[2], 2)
+        median_cnt <- round(median(dat2), 2)
+        q3_cnt <- round(quantile(dat2)[4], 2)
+        mean_cnt <- round(mean(dat2), 2)
+        std_cnt <- round(sd(dat2), 2)
+        iqr_cnt <- round(IQR(dat2), 2)
+        min_cnt <- round(min(dat2), 2)
+        max_cnt <- round(max(dat2), 2)
+        
+        # Min, q1, median, q3, max, mean, standard deviation
+        df <- cbind(data.frame("1" =c("PRR", "Count"), "2" = c(min_prr, min_cnt), "3"=c(q1_prr, q1_cnt), "4" = c(median_prr, median_cnt), 
+                               "5"=c(q3_prr, q3_cnt), "6" = c(max_prr, max_cnt), "7"=c(mean_prr, mean_cnt), "8"=c(std_prr, std_cnt)));
+        if(length(dat1)>0){
+            n=dset$CASE_COUNT[which(dset$PT_TERM == input$intro_ae)][1]
+        }
+        else{
+            n=0
+        }
+        colnames(df) = c(paste0(input$ae, " (N=", n, ")"), "Min", "Q1", "Median",  "Q3", "Max", "Mean", "STD")
+        
+        dt <- datatable(df, rownames = FALSE, options = list(dom = 't', scrollX=T)) %>%
+            DT::formatStyle(names(df),lineHeight='90%') 
+        dt
+    })
+    
+    # -------------------------------------------------PAGE 2 (not including intro 1,2)---------------------------------------------------
     
     
     #-------------------------------------------Multiple Selection, box 3-------------------------------------------
@@ -269,6 +489,36 @@ function(input, output, session) {
     curr_level <- reactiveVal(value = 0)
     cc_1 <- reactiveVal(value=1000) # because sliderinput value change isn't recognized
     ptc_1 <- reactiveVal(value=10)
+    
+    output$mult_two_ae <- renderPlot({
+        barData = event_data("plotly_click", source = "Aa");
+        pt1 <- subset(dset, select=c(INAME,CASE_COUNT, PT_COUNT, PT_TERM, PRR, L10_PRR, ATC1, ATC2, ATC3, ATC4),
+                      subset=(PT_TERM == input$ae1 & CASE_COUNT>ifelse(is.null(input$num_obs),1000,input$num_obs)))
+        pt2 <- subset(dset, select = c(INAME, CASE_COUNT, PT_COUNT, PT_TERM, PRR, L10_PRR, ATC1, ATC2, ATC3, ATC4),
+                      subset = (PT_TERM == barData$x & CASE_COUNT > ifelse(is.null(input$num_obs),1000,input$num_obs)))
+        data<- merge(pt1,pt2, by="INAME") %>% distinct()
+        print(data)
+        xmin <- min(data$L10_PRR.x)
+        xmax <- max(data$L10_PRR.x)
+        ymin <- min(data$L10_PRR.y)
+        ymax <- max(data$L10_PRR.y)
+        ggplot(data, aes(x = L10_PRR.x, y = L10_PRR.y))+
+            geom_point(color="#392dc2", size = 2) +
+            labs(
+                x = input$ae1,
+                y = barData$x,
+                title = paste(input$ae1, " vs. ", barData$x),
+                subtitle = "PRR Values are Log-Transformed in Both Axes"
+            ) +
+            theme_bw() +
+            theme(plot.title = element_text(hjust = 0.5, size=15), axis.title = element_text(size = 13),
+                  plot.subtitle = element_text(hjust = 0.5, size=13), axis.text = element_text(size=14)) +
+            xlim(c(xmin, xmax)) +
+            ylim(c(ymin, ymax)) +
+            scale_x_continuous(breaks = scales::pretty_breaks(n = (max(data$L10_PRR.x)-min(data$L10_PRR.x)))) +
+            scale_y_continuous(breaks = scales::pretty_breaks(n = (max(data$L10_PRR.y)-min(data$L10_PRR.y))))
+        
+    })
     
     # dt on plotly_click
     observeEvent(event_data("plotly_click", source = "Aa"),  {
@@ -330,21 +580,26 @@ function(input, output, session) {
                 }
             }
         )
+       
+        
+        
+        
+        
         showModal(modalDialog(
             size = "l",
             title = paste0(barData$x, " vs.", input$ae1, " (r=", round(barData$y, digits=2), ")"),
-            div(style="float:right", downloadButton("download_6", "Download")),
-            div(style="float:right", selectInput("downloadType6", label=NULL, 
-                                                 choices=c("CSV"=".csv", "TXT"=".txt", "XLSX"=".xlsx", "JSON"=".json"), selected=".csv", width=80)),
-            # div(style="display: inline-block; float: right", downloadButton("mult_comp_csv", "CSV")),
-            # div(style="display: inline-block; float: right", downloadButton("mult_comp_txt", "TXT")),
-            # div(style="display: inline-block; float: right", downloadButton("mult_comp_xlsx", "XLSX")),
-            # tags$br(),
-            # tags$br(),
-            DT::dataTableOutput("drugs_dt"),
-            easyClose = TRUE,
-            footer = tagList(
-                modalButton("Exit")
+            tabsetPanel(type = "tabs",
+                        tabPanel("Data Table", div(style="float:right", downloadButton("download_6", "Download")),
+                                 div(style="float:right", selectInput("downloadType6", label=NULL, 
+                                                                      choices=c("CSV"=".csv", "TXT"=".txt", "XLSX"=".xlsx", "JSON"=".json"), selected=".csv", width=80)),
+                                 DT::dataTableOutput("drugs_dt"),
+                                 easyClose = TRUE,
+                                 footer = tagList(
+                                     modalButton("Exit")
+                                 )),
+                        tabPanel("Scatter Plot", 
+                                 plotOutput("mult_two_ae")
+                        )
             )
         ));
     })
@@ -524,9 +779,11 @@ function(input, output, session) {
         }
     }, ignoreNULL = FALSE)
     
-    observeEvent(input$num_obs, {
-        rerender()
-        pts$data = pts_temp$data
+    observeEvent(input$num_obs, ignoreNULL=TRUE, {
+        if(!is.na(input$num_obs)){
+            rerender()
+            pts$data = pts_temp$data
+        }
     })
     
     #----------------------------------------------------plot-------------------------------------------------------
@@ -1019,7 +1276,9 @@ function(input, output, session) {
     
     #rerender
     observeEvent(input$min_ae, {
-        rerender_subs();
+        if(!is.na(input$min_ae)){
+            rerender_subs();
+        }
     })
     
     # update subs for plot
@@ -1065,6 +1324,38 @@ function(input, output, session) {
         }
     })
     
+    output$mult_two_subs <- renderPlot({
+        # input$sub1, " VS. ", barData$x
+        barData = event_data("plotly_click", source = "B");
+        d1<-subset(dset,select=c(PT_TERM,PT_COUNT,PT_TERM,PRR,L10_PRR),
+                   subset=(INAME==input$sub1))
+        d2<-subset(dset,select=c(PT_TERM,PT_COUNT,PT_TERM,PRR,L10_PRR),
+                   subset=(INAME==barData$x))
+        data2<- merge(d1,d2,by="PT_TERM") %>% distinct()
+        
+        
+        xmin <- min(data2$L10_PRR.x)
+        xmax <- max(data2$L10_PRR.x)
+        ymin <- min(data2$L10_PRR.y)
+        ymax <- max(data2$L10_PRR.y)
+        
+        ggplot(data2, aes(x = L10_PRR.x, y = L10_PRR.y)) + 
+            geom_point(color="#113569", size = 2) +
+            labs(
+                x = input$sub1, 
+                y = barData$x,
+                title = paste(barData$x, " vs. ", input$sub1),
+                subtitle = "PRR Values are Log-Transformed in Both Axes"
+            ) +
+            theme_bw() +
+            theme(plot.title = element_text(hjust = 0.5, size=15), plot.subtitle = element_text(hjust = 0.5, size=13),
+                  axis.text = element_text(size=14)) +  
+            xlim(c(xmin, xmax)) +
+            ylim(c(ymin, ymax)) +
+            scale_x_continuous(breaks = scales::pretty_breaks(n = (max(data2$L10_PRR.x)-min(data2$L10_PRR.x)))) +
+            scale_y_continuous(breaks = scales::pretty_breaks(n = (max(data2$L10_PRR.y)-min(data2$L10_PRR.y))))
+    })
+    
     
     #onclick data
     observeEvent(event_data("plotly_click", source = "B"),  {
@@ -1087,7 +1378,7 @@ function(input, output, session) {
         
         output$download_4 <- downloadHandler(
             filename = function(){
-                paste(input$sub1, " VS. ", barData$x, input$downloadType4);
+                paste(barData$x, " VS. ", input$sub1, input$downloadType4);
             },
             content = function(file){
                 if(input$downloadType4 == ".csv") {
@@ -1104,25 +1395,25 @@ function(input, output, session) {
         )
         
         showModal(modalDialog(
-            size = "l",
-            title = paste(barData$x, "vs. ", input$sub1, " (r=", round(barData$y, digits=2), ")"),
-            div(style="float:right", downloadButton("download_4", "Download")),
-            div(style="float:right", selectInput("downloadType4", label=NULL, 
-                                                 choices=c("CSV"=".csv", "TXT"=".txt", "XLSX"=".xlsx", "JSON"=".json"), selected=".csv", width=80)),
-            
-            
-            # div(style="display: inline-block; float: right", downloadButton("subs_csv", "CSV")),
-            # " ",
-            # div(style="display: inline-block; float: right", downloadButton("subs_txt", "TXT")),
-            # div(style="display: inline-block; float: right", downloadButton("subs_xlsx", "XLSX")),
-            # tags$br(),
-            # tags$br(),
-            DT::dataTableOutput("ae_dt"),
-            easyClose = TRUE,
-            footer = tagList(
-                modalButton("Exit")
+            size="l",
+            title = paste0(barData$x, " vs.", input$sub1, " (r=", round(barData$y, digits=2), ")"),
+            tabsetPanel(type = "tabs",
+                        tabPanel("Data Table",
+                                 div(style="float:right", downloadButton("download_4", "Download")),
+                                 div(style="float:right", selectInput("downloadType4", label=NULL, 
+                                                                      choices=c("CSV"=".csv", "TXT"=".txt", "XLSX"=".xlsx", "JSON"=".json"), selected=".csv", width=80)),
+                                 
+                                 DT::dataTableOutput("ae_dt"),
+                                 easyClose = TRUE,
+                                 footer = tagList(
+                                     modalButton("Exit")
+                                 )
+                                 ),
+                        tabPanel("Scatter Plot", 
+                                 plotOutput("mult_two_subs")
+                        )
             )
-        ));
+        ))
     })
     
     # ---------------------------------------------- page 3; box 1, 2-----------------------------------------------------
@@ -1770,15 +2061,19 @@ function(input, output, session) {
         )
     })
     
-    observeEvent(input$class_choices, ignoreInit=TRUE, {
+    observeEvent(input$class_choices, ignoreInit=TRUE, { # DELETE IGNORE INIT (for debugging)
         print(input$class_choices)
         # print(dset$INAME[which(dset$ATC1==input$class_choices)])
         x=unique(dset$INAME[which(dset$ATC1==input$class_choices |  dset$ATC2==input$class_choices | dset$ATC3==input$class_choices | dset$ATC4==input$class_choices)])
-        print(length(x)==0)
+        # print(length(x)==0)
         process(x)
     })
     
     observeEvent(input$check_drugs, {
+        show('done_heat')
+    })
+    
+    observeEvent(input$done_heat, {
         process(input$check_drugs)
     })
     
