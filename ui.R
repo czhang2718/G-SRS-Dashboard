@@ -73,7 +73,8 @@ tagList(
                         ),
         dashboardSidebar(
             sidebarMenu(
-                menuItem("Home", tabName="intro"),
+                menuItem("Browse Substances", tabName="intro"),
+                menuItem("Browse Adverse Events", tabName="intro2"),
                 menuItem("Compare Adverse Events", tabName="compare_ae"),
                 menuItem("Compare Substances", tabName = "compare_subs"),
                 menuItem("Class Comparison", tabName="class_comp"),
@@ -123,6 +124,48 @@ tagList(
                                        div(id="aebar", style="overflow-y: scroll; position: relative", plotlyOutput("top_ae"))
                                    )
                             )
+                        )
+                ),
+                # NEW
+                tabItem("intro2",
+                        fluidRow(
+                          column(width = 12,
+                                 box(width=9, solidHeader=TRUE,
+                                     selectInput("intro_ae", "Select Adverse Event", vars, multiple=FALSE, selected="ABDOMINAL ADHESIONS")),
+                                 
+                                 box(width=3, solidHeader=TRUE,
+                                     
+                                     div(align="center", 
+                                         selectInput("downloadType6", "Download As", c(".csv", ".txt", ".xlsx", ".json"), selected=".csv", width="60%"),
+                                         downloadButton("dload2", "Download")),
+                                 )
+                          )
+                        ),
+                        
+                        fluidRow(
+                          column(width = 6,
+                                 box(id= "intro-pie2", width = NULL, status="warning",
+                                     solidHeader = TRUE, 
+                                     actionButton("pop_pie2", label="", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: right"), 
+                                     bsModal("pop_pie_modal2", "", trigger="pop_pie2", size="large", plotlyOutput("pie_chart22")),
+                                     tags$br(), tags$br(),
+                                     plotlyOutput("pie_chart21")
+                                 ),
+                                 box(id="table-box2", title="Summary Statistics", width=NULL, status="primary",
+                                     solidHeader=T, dataTableOutput("sum_table2"))
+                                 
+                          ),
+                          
+                          column(width = 6,
+                                 box(id= "intro-box2", title = "Adverse Events", width = NULL, 
+                                     
+                                     div(style="display: inline-block;", selectInput("sort_by2", c("PT Count", "PRR"), 
+                                                                                     label = "Sort by", selected="PT Count", multiple=FALSE, width = "210px")),
+                                     actionButton("popdt2", "", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: right"), 
+                                     span(style="float:right;  padding-right: 20px; visibility:hidden", "."),
+                                     div(id="subsbar", style="overflow-y: scroll; position: relative", plotlyOutput("top_subs"))
+                                 )
+                          )
                         )
                 ),
                 
@@ -360,12 +403,13 @@ tagList(
                                 "Level 1" = l1,
                                 "Level 2" = l2,
                                 "Level 3" = l3,
-                                "Level 4 "= l4), multiple = FALSE),
+                                "Level 4 "= l4), multiple = FALSE, options= list(maxOptions = 11200)),
                               tags$b("Create List"),
                               dropdownBtn(
                                 label = "Select", status = "default", width = "100%",
                                 checkboxGroupInput(inputId = "check_drugs", label = "Select", choices = vars2)
                               ),
+                              div(style="display: inline-block; float: right", hidden(actionButton('done_heat', "Done"))),
                               shiny::uiOutput('data'),
                               shiny::conditionalPanel('input.showSample',shiny::uiOutput('sample')),
                               # br(),
