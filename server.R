@@ -1583,7 +1583,22 @@ function(input, output, session) {
     
     #------------------------------------------------------------------------------------------------------------------------------------------
     #------------------------------------------------------------------- PAGE 4 ----------------------------------------------------------------
-    
+    class_name <- reactiveVal("MUSCULO-SKELETAL SYSTEM")
+    observeEvent(input$class_op, {
+        if(input$class_op=="User-selected drugs"){
+            class_name("Custom List")
+        }
+        else if(input$class_op=="ATC Class") {
+            req(!is.null(input$cc_1));
+            class_name(input$cc1)
+        }
+        else{
+            class_name("Custom List")
+        }
+    })
+    observeEvent(input$atcclass, {
+        
+    })
     class_dat_global <- reactive({
         if(input$class_op=="User-selected drugs"){
             data <- dset[which(dset$INAME %in% input$custom_list),]
@@ -1717,7 +1732,13 @@ function(input, output, session) {
                        barmode = 'stack', legend = list(x=0), autosize=TRUE, margin = list(l = 20, r = 20, b = 200, t = 10)) %>%
                 plotly::config(modeBarButtons = list(list("toImage")), displaylogo = FALSE)
         }
-        
+        else if(input$sortby4=="Drug (Alphabetical)"){
+            plot_ly(dat4(), x=~reorder(PT_TERM, PT_TERM), y=~PRR.x, type="bar", name=input$cc_2, width= 20*nrow(dat4()), source='F') %>%
+                add_trace(y=~PRR.y, name="Class") %>% 
+                layout(bargap=.1, yaxis = list(title = 'PRR', showline = TRUE), xaxis = list(title='Adverse Events', tickangle=90, showline = TRUE), 
+                       barmode = 'stack', legend = list(x=0), autosize=TRUE, margin = list(l = 20, r = 20, b = 200, t = 10)) %>%
+                plotly::config(modeBarButtons = list(list("toImage")), displaylogo = FALSE)
+        }
         else{
             plot_ly(dat4(), x=~reorder(PT_TERM, -(PRR.y+PRR.x)), y=~PRR.x, type="bar", name=input$cc_2, width=20*nrow(dat4()), source='F') %>%
                 add_trace(y=~PRR.y, name="Class") %>% 
@@ -1762,7 +1783,7 @@ function(input, output, session) {
     
     
     output$sortby4 <- renderUI({
-        selectizeInput("sortby4", "Sort by", c("Total", "Class", input$cc_2), selected="Total")
+        selectizeInput("sortby4", "Sort by", c("Drug (Alphabetical)", "Total", "Class", input$cc_2), selected="Drug (Alphabetical)")
     })
     
     
@@ -1973,14 +1994,14 @@ function(input, output, session) {
 
         dat <- summaryBy(L10_PRR ~ PT_TERM, data = class_dat_global(), 
                          FUN = list(median))
-        
+        print(class_name());
         plot_ly(dat, type="histogram", x=~L10_PRR.median, marker=list(color="peachpuff"), source="I") %>%
             layout(
                 showlegend = FALSE,
                 xaxis=list(title="Median PRR")
             ) %>%
             plotly::config(modeBarButtons = list(list("toImage")), displaylogo = FALSE) %>%
-            layout(shapes = list(vline(x_val())), title="Frequency of Median PRRs of Class Drugs")
+            layout(shapes = list(vline(x_val())), title=paste(class_name(), "<br>Frequency of Median PRRs"))
     })
     
     #MODAL COPY
@@ -2087,12 +2108,12 @@ function(input, output, session) {
         # print(drugs)
         # print(mp[["TRIAMTERENE"]][["MENIERE'S DISEASE"]])
         if(length(drugs)<2) {
-            showNotification("Not enough data for selected drugs", closeButton = TRUE,
+            showNotification("Not enough data for selected drugs.", closeButton = TRUE,
                              type = "error")
             return();
         }
         if(length(drugs)>100){
-            showNotification("Too many drugs", closeButton = TRUE,
+            showNotification("Too many drugs. Please input between 2 and 100 drugs.", closeButton = TRUE,
                              type = "error")
             return();
         }
