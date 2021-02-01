@@ -102,7 +102,7 @@ tagList(
                         
                         fluidRow(
                             column(width = 6,
-                                   box(id= "intro-pie", width = NULL, status="warning",
+                                   box(id= "intro-pie", width = NULL, height="50%", status="warning",
                                        solidHeader = TRUE, 
                                        actionButton("pop_pie", label="", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: right"), 
                                        bsModal("pop_pie_modal", "", trigger="pop_pie", size="large", plotlyOutput("pie_chart2")),
@@ -409,7 +409,7 @@ tagList(
                                 label = "Select", status = "default", width = "100%",
                                 checkboxGroupInput(inputId = "check_drugs", label = "Select", choices = vars2)
                               ),
-                              div(style="display: inline-block; float: right", hidden(actionButton('done_heat', "Done"))),
+                              div(style="display: inline-block; float: right", hidden(actionButton('done_heat', "Run"))),
                               shiny::uiOutput('data'),
                               shiny::conditionalPanel('input.showSample',shiny::uiOutput('sample')),
                               # br(),
