@@ -91,7 +91,7 @@ function(input, output, session) {
     
     
     #pop up formattable dt on maximize button
-    observeEvent(input$popdt, {
+    observeEvent(input$popdt, ignoreInit=T, {
         aes = dset[which(dset$INAME == input$intro_drug), c(3, 7, 11)]
         if(nrow(aes)==0){
             showNotification("Not enough data available", type="warning")
@@ -315,7 +315,7 @@ function(input, output, session) {
     
     
     #pop up formattable dt on maximize button
-    observeEvent(input$popdt2, {
+    observeEvent(input$popdt2, ignoreInit=T, {
         aes = dset[which(dset$PT_TERM == input$intro_ae), c(2, 7, 11)]
         if(nrow(aes)==0){
             showNotification("Not enough data available", type="warning")
@@ -1673,7 +1673,7 @@ function(input, output, session) {
         merge(d1,d2,by="PT_TERM") %>% distinct()
     })
     
-    observeEvent(input$cc_2, {
+    observeEvent(input$cc_2, ignoreInit=T, {
         if(!(input$cc_2 %in% dset$INAME)){
             hideElement(id="column1")
             showNotification("Not enough data available", type="error", duration=1)
@@ -2069,7 +2069,9 @@ function(input, output, session) {
     #     process(obj[[input$data]])
     # })  
     global_drugs=reactiveValues(dat=NULL)
+    # atc_chosen = reactiveVal(1)
     observeEvent(input$heat_file, {
+        # atc_chosen(0)
         req(input$heat_file)
         tryCatch(
             {
@@ -2082,7 +2084,8 @@ function(input, output, session) {
         )
     })
     
-    observeEvent(input$class_choices, ignoreInit=TRUE, { # DELETE IGNORE INIT (for debugging)
+    observeEvent(input$class_choices, { # DELETE IGNORE INIT (for debugging)
+        # atc_chosen(1)
         print(input$class_choices)
         # print(dset$INAME[which(dset$ATC1==input$class_choices)])
         x=unique(dset$INAME[which(dset$ATC1==input$class_choices |  dset$ATC2==input$class_choices | dset$ATC3==input$class_choices | dset$ATC4==input$class_choices)])
@@ -2091,6 +2094,7 @@ function(input, output, session) {
     })
     
     observeEvent(input$check_drugs, {
+        # atc_chosen(0)
         show('done_heat')
     })
     
@@ -2107,7 +2111,7 @@ function(input, output, session) {
         global_drugs$dat=drugs
         # print(drugs)
         # print(mp[["TRIAMTERENE"]][["MENIERE'S DISEASE"]])
-        if(length(drugs)<2) {
+        if(length(drugs)<=2) {
             showNotification("Not enough data for selected drugs.", closeButton = TRUE,
                              type = "error")
             return();
@@ -2260,18 +2264,7 @@ function(input, output, session) {
         })
     })
     
-    output$tables=shiny::renderDataTable(data.sel$df,
-                                         options = list(
-                                             dom = 't',
-                                             buttons = c('copy', 'csv', 'excel', 'pdf', 'print','colvis'),
-                                             colReorder = TRUE,
-                                             scrollX = TRUE,
-                                             fixedColumns = TRUE,
-                                             fixedHeader = TRUE,
-                                             deferRender = TRUE,
-                                             scrollY = 500,
-                                             scroller = TRUE
-                                         ))
+    output$tables=DT::renderDataTable(datatable(data.sel$df, options=list(pageLength = 15, scrollX=TRUE)), rownames=TRUE)
     
     #Clone Heatmap ----
     shiny::observeEvent({interactiveHeatmap()},{
@@ -2347,5 +2340,58 @@ function(input, output, session) {
         }
         
     )
+    
+    output$dendro <- renderPlot({
+        dat = t(data.sel$df)
+        
+        # d <- dist(dat, method = "euclidean") # Euclidean distance matrix.
+        # H.fit <- hclust(d, method="average")
+        
+        dend <- dat %>% dist(method="euclidean") %>% hclust(method = "average") %>% 
+            as.dendrogram 
+        
+        dend %>% plot(horiz=TRUE, main = "Average clustering using Euclidean distance")
+        
+        # plot + color the dend's branches before, based on 3 clusters:
+        # dend %>% plot(horiz=TRUE, main = "Substance Clustering")
+        
+        # add horiz rect
+        dend %>% rect.dendrogram(k=input$c,horiz=TRUE)
+        
+        
+        
+        # par(cex=.5,font=1)
+        # 
+        # plot(as.dendrogram(H.fit), hang=-1, main="Substance Clustering", horiz=T)
+        #      # label=rownames(dat))
+        # rect.hclust(H.fit, k=input$c, border="red") 
+    })
+    
+    
+    
+    set.seed(123456789)
+    output$grouped <- renderPlot({
+        # if(atc_chosen()==T) return();
+        dat=t(data.sel$df)
+        grpDat <- kmeans(dat, centers=input$c)
+        classes=unique(dset$ATC1[which(dset$INAME %in% rownames(dat))])
+        
+        df <- data.frame(class=character(), count=integer(), cluster=character(), stringsAsFactors=FALSE)
+        for(class in classes){
+            for(i in 1:input$c){
+                cnt=0;
+                for(j in 1:length(rownames(dat))){
+                    if(dset$ATC1[which(dset$INAME==rownames(dat)[j])]==class && grpDat$cluster[j]==i) cnt=cnt+1;
+                }
+                df[nrow(df) + 1,] = list(class, cnt, i)
+            }
+        }
+        plot<- ggplot(df, aes(fill=class, y=count, x=cluster)) + 
+            geom_bar(position="dodge", stat="identity")
+        plot + scale_fill_discrete(name = "ATC Class")
+    })
+    
+    output$drug.cluster=renderDataTable(data.frame("Substance"=colnames(data.sel$df), "Cluster"=kmeans(t(data.sel$df), centers=input$c)$cluster), rownames=FALSE)
+    
 }
 
