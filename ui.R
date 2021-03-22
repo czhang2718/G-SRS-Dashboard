@@ -403,7 +403,7 @@ tagList(
                                 "Level 1" = l1,
                                 "Level 2" = l2,
                                 "Level 3" = l3,
-                                "Level 4 "= l4), multiple = FALSE, options= list(maxOptions = 11200)),
+                                "Level 4 "= l4), selected="ANTIINFLAMMATORY AGENTS", multiple = FALSE, options= list(maxOptions = 11200)),
                               tags$b("Create List"),
                               dropdownBtn(
                                 label = "Select", status = "default", width = "100%",
@@ -417,7 +417,7 @@ tagList(
                               htmltools::br(),htmltools::hr(),htmltools::h4('Row dendrogram'),
                               shiny::column(width=6,shiny::selectizeInput("distFun_row", "Distance method", c(Euclidean="euclidean",Maximum='maximum',Manhattan='manhattan',Canberra='canberra',Binary='binary',Minkowski='minkowski'),selected = 'euclidean')),
                               shiny::column(width=6,shiny::selectizeInput("hclustFun_row", "Clustering linkage", c(Complete= "complete",Single= "single",Average= "average",Mcquitty= "mcquitty",Median= "median",Centroid= "centroid",Ward.D= "ward.D",Ward.D2= "ward.D2"),selected = 'average')),
-                              shiny::column(width=12,shiny::sliderInput("r", "Number of Clusters", min = 1, max = 9, value = 2)),    
+                              shiny::column(width=12,shiny::numericInput("r", "Number of Clusters", min = 1, max = 9, step=1, value = 2)),    
                               #column(width=4,numericInput("r", "Number of Clusters", min = 1, max = 20, value = 2, step = 1)),   
                               
                               htmltools::br(),htmltools::hr(),htmltools::h4('Column dendrogram'),
@@ -469,10 +469,19 @@ tagList(
                                                 htmltools::tags$head(htmltools::tags$style(".mybutton{color:white;background-color:blue;} .skin-black .sidebar .mybutton{color: green;}") ),
                                                 withSpinner(plotly::plotlyOutput("heatout",height=paste0(plotHeight,'px')))
                                 ),
-                                shiny::tabPanel("Data",
+                                shiny::tabPanel("Matrix",
                                                 div(selectInput("downloadTypeHeat", "Download As", c(".csv", ".txt", ".xlsx", ".json"), selected=".csv", width="60%"),
                                                     downloadButton("dloadheat", "Download")),
-                                                shiny::dataTableOutput('tables')
+                                                DT::dataTableOutput('tables')
+                                ),
+                                shiny::tabPanel("Dendrogram",
+                                                withSpinner(plotOutput("dendro"))
+                                ),
+                                shiny::tabPanel("Substance Clusters",
+                                                withSpinner(dataTableOutput('drug.cluster'))
+                                ),
+                                shiny::tabPanel("ATC Comparison",
+                                                withSpinner(plotOutput("grouped"))
                                 )
                               ) 
                             )
