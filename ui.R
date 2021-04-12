@@ -141,6 +141,11 @@ tagList(
                                  )
                           )
                         ),
+                        fluidRow(
+                          column(width = 12,
+                                 box(id="report_box", title="Number of Reports Over Time", width=NULL, solidHeader=TRUE, plotlyOutput("reports")),
+                          )
+                        ),
                         
                         fluidRow(
                           column(width = 6,
@@ -475,7 +480,8 @@ tagList(
                                                 DT::dataTableOutput('tables')
                                 ),
                                 shiny::tabPanel("Dendrogram",
-                                                withSpinner(plotOutput("dendro"))
+                                                actionButton("pop_dendro", label="Dendrogram"), 
+                                                bsModal("modal_dendro", "", trigger="pop_dendro", size="large", plotOutput("dendro")),
                                 ),
                                 shiny::tabPanel("Substance Clusters",
                                                 withSpinner(dataTableOutput('drug.cluster'))
