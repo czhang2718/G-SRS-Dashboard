@@ -23,6 +23,9 @@ library(stringr)
 library(htmltools)
 library(heatmaply)
 library(xml2)
+library("dendextend")
+library(hrbrthemes)
+
 
 function(input, output, session) {
     
@@ -2349,7 +2352,7 @@ function(input, output, session) {
         
         dend <- dat %>% dist(method="euclidean") %>% hclust(method = "average") %>% 
             as.dendrogram 
-        
+        par(mar = c(2,2,2,20))
         dend %>% plot(horiz=TRUE, main = "Average clustering using Euclidean distance")
         
         # plot + color the dend's branches before, based on 3 clusters:
@@ -2393,5 +2396,29 @@ function(input, output, session) {
     
     output$drug.cluster=renderDataTable(data.frame("Substance"=colnames(data.sel$df), "Cluster"=kmeans(t(data.sel$df), centers=input$c)$cluster), rownames=FALSE)
     
+    output$reports <- renderPlotly({
+        AE=input$intro_ae
+        str <- event_json$results$time[1]
+        d <- paste(substr(str, 1, 4), substr(str, 5, 6), substr(str, 7, 8), sep="-")
+        dates=c()
+        count=c()
+        sysdate <- Sys.Date()
+        for(i in 1:length(event_json$results$time)){
+            str <- event_json$results$time[i]
+            d <- paste(substr(str, 1, 4), substr(str, 5, 6), substr(str, 7, 8), sep="-")
+            if(d<sysdate){
+                dates=c(dates, d)
+                count=c(count, event_json$results$count[i])
+            }
+        }
+        df <- data.frame("Date"=as.Date(dates), "Count"=count)
+        ggplotly(
+            ggplot(data=df, aes(x=Date, y=Count)) +
+                geom_area(fill="#69b3a2", alpha=0.5) +
+                geom_line(color="#69b3a2") +
+                ylab(paste(AE, "Count")) +
+                theme_ipsum()
+        )
+    })
 }
 
