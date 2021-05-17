@@ -48,7 +48,7 @@ tagList(
     useShinyjs(),
     tags$script(src = "myscript.js"),
     tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
-    tags$head(tags$style(HTML('.wrapper {height: auto !important; position:relative; overflow-x:hidden; overflow-y:hidden}'))),
+    tags$head(tags$style(HTML('.wrapper {height: auto !important; position:relative; overflow-x:hidden; overflow-y:hidden}'))), # .modal-dialog { width: fit-content !important; }
     div(id="start-page", img(id="bg", src="img3.jpg"),
         h1(id="loading_text", "G-SRS Data Explorer"),
         HTML("<button id='startbutton'>Start</button>")),
@@ -204,83 +204,83 @@ tagList(
                                    ),
                                    collapseInput(boxId = "box1a"),
                                    collapseInput(boxId = "box1b"),
-                                   collapseInput(boxId = "box1c")),
+                                   collapseInput(boxId = "box1c")
+                            ),
                             
                             column(width=8,
-                                   tabBox(
-                                       id = "tabset",
-                                       # height = "450px",
-                                       width = NULL,
-                                       tabPanel("Two AE", div(
-                                           actionButton("dt_open1", "Data Table"),
-                                           actionButton("pop_scatterPlot", label="", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: right"), 
-                                           bsModal("scatterPlot_modal", "", trigger="pop_scatterPlot", size="large", plotOutput("scatterPlot12")),
-                                           style = "position:relative",
-                                           plotOutput("scatterPlot", 
-                                                      hover = hoverOpts("plot_hover"),
-                                                      click = clickOpts(id = "plot_click")),
-                                           
-                                           uiOutput("hover_info"),
-                                           uiOutput("click_info"),
-                                           textOutput('cor1a'),
-                                           textOutput('cor1b'),
-                                           tags$head(tags$style("#cor1a{font-size: 16px; color: grey}")),
-                                           bsTooltip("cor1a", "Pearson&#39s Correlation Coefficient", placement="left"),
-                                           tags$head(tags$style("#cor1b{font-size: 16px; color: grey}")))
-                                       ),
-                                       
-                                       bsModal("ae_dt", "Data Table", trigger="dt_open1", size="large",
-                                                div(style="float: left", checkboxInput("alldata", "Unfiltered", value = FALSE)),
-                                                div(style="float:right", downloadButton("download_2", "Download")),
-                                                div(style="float:right", selectInput("downloadType2", label=NULL, choices=c("CSV"=".csv", "TXT"=".txt", "XLSX"=".xlsx", "JSON"=".json"), selected=".csv", width=80)),
-                                                
-                                                DTOutput("table1")
-                                       ),
-                                       tabPanel("Multiple AE",
-                                                width = "100%",
-                                                selectizeInput("ae1", "Adverse Event", vars, width = "30%",  selected = vars[4], options = list(maxOptions=12000)),
-                                                dropdownBtn(
-                                                    label = "Compare With", status = "default", width = "100%",
-                                                    checkboxGroupInput(inputId = "other_ae", label = "Choose", choices = vars)
-                                                ),
-                                                
-                                                span("Number of Substances \u2265"),
-                                                div(style="display: inline-block;", numericInput("num_obs", label = NULL, value = 5, width = "55px", min=1, max=1000)),
-                                                actionLink("classes", "Filter"),    
-                                                bsModal("filter", "Filter Observations", trigger = "classes", size = "large", splitLayout(cellArgs = list(style = "padding-left: 60px"),
-                                                                                                                                          tags$div(
-                                                                                                                                              h5("Restrictions on Substance Observations"),
-                                                                                                                                              numericInput(inputId="casecount_box1",label="Minimum Case Count",min=100,max=50000,value=1000, step=1),
-                                                                                                                                              numericInput(inputId="ptcount_box1",label="Minimum Adverse Event Count",min=5,max=100,value=10, step=1)
-                                                                                                                                          ),
-                                                                                                                                          tags$div(
-                                                                                                                                              h5("Filter Substances by ATC Classification"),
-                                                                                                                                              uiOutput("class1"),
-                                                                                                                                              uiOutput("class2"),
-                                                                                                                                              uiOutput("class3"),
-                                                                                                                                              uiOutput("class4") 
-                                                                                                                                          )
-                                                ),
-                                                tags$div(align="center", actionButton("filt", "Filter"), actionButton("reset", "Reset")),
-                                                tags$head(tags$style("#reset .modal-footer{ display:none; margin: auto}")),
-                                                tags$head(tags$style("#filter .modal-footer{ display:none; margin: auto}")),
-                                                tags$head(tags$style("#filt {display:inline-block; padding:0.3em 1.2em; margin:0 0.1em 0.1em 0; border:0.16em solid rgba(255,255,255,0);  
-                                            box-sizing: border-box; text-decoration:none; font-family:'Roboto',sans-serif; font-weight:300; color:#FFFFFF; 
-                                            text-shadow: 0 0.04em 0.04em rgba(0,0,0,0.35); text-align:center; background-color:#55c24f}")),
-                                                tags$head(tags$style("#reset {display:inline-block; padding:0.3em 1.2em; margin:0 0.1em 0.1em 0; border:0.16em solid rgba(255,255,255,0); 
-                                            box-sizing: border-box; text-decoration:none; font-family:'Roboto',sans-serif; font-weight:300; color:#FFFFFF; 
-                                            text-shadow: 0 0.04em 0.04em rgba(0,0,0,0.35); text-align:center; background-color:#bdbdbd}")),
-                                                tags$head(tags$style("#reset:hover { background-color: #8f8f8f}")),
-                                                tags$head(tags$style("#filt:hover { background-color:#45a340 }"))
-                                                ),
-                                                actionButton("pop_mult_ae1", label="", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: right"), 
-                                                bsModal("mult_ae1_modal", "", trigger="pop_mult_ae1", size="large", plotlyOutput("mult_ae12")),
-                                                withSpinner(plotlyOutput("mult_ae1"))
-                                       )
-                                       
+                                     box(title="Two AE", width = NULL, div(
+                                         actionButton("dt_open1", "Data Table"),
+                                         actionButton("pop_scatterPlot", label="", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: right"), 
+                                         bsModal("scatterPlot_modal", "", trigger="pop_scatterPlot", size="large", plotOutput("scatterPlot12")),
+                                         style = "position:relative",
+                                         plotOutput("scatterPlot", 
+                                                    hover = hoverOpts("plot_hover"),
+                                                    click = clickOpts(id = "plot_click")),
+                                         
+                                         uiOutput("hover_info"),
+                                         uiOutput("click_info"),
+                                         textOutput('cor1a'),
+                                         textOutput('cor1b'),
+                                         tags$head(tags$style("#cor1a{font-size: 16px; color: grey}")),
+                                         bsTooltip("cor1a", "Pearson&#39s Correlation Coefficient", placement="left"),
+                                         tags$head(tags$style("#cor1b{font-size: 16px; color: grey}")))
+                                     ),
+                                     
+                                     bsModal("ae_dt", "Data Table", trigger="dt_open1", size="large",
+                                              div(style="float: left", checkboxInput("alldata", "Unfiltered", value = FALSE)),
+                                              div(style="float:right", downloadButton("download_2", "Download")),
+                                              div(style="float:right", selectInput("downloadType2", label=NULL, choices=c("CSV"=".csv", "TXT"=".txt", "XLSX"=".xlsx", "JSON"=".json"), selected=".csv", width=80)),
+                                              
+                                              DTOutput("table1")
+                                     ))
+                          ),
+                                  fluidRow(
+                                    column(width=12, 
+                                           box(title="Multiple AE",
+                                            width = NULL,
+                                            selectizeInput("ae1", "Adverse Event", vars, width = "30%",  selected = vars[4], options = list(maxOptions=12000)),
+                                            dropdownBtn(
+                                                label = "Compare With", status = "default", width = "100%",
+                                                checkboxGroupInput(inputId = "other_ae", label = "Choose", choices = vars)
+                                            ),
+                                            
+                                            span("Number of Substances \u2265"),
+                                            div(style="display: inline-block;", numericInput("num_obs", label = NULL, value = 5, width = "55px", min=1, max=1000)),
+                                            actionLink("classes", "Filter"),    
+                                            bsModal("filter", "Filter Observations", trigger = "classes", size = "large", splitLayout(cellArgs = list(style = "padding-left: 60px"),
+                                                                                                                                      tags$div(
+                                                                                                                                          h5("Restrictions on Substance Observations"),
+                                                                                                                                          numericInput(inputId="casecount_box1",label="Minimum Case Count",min=100,max=50000,value=1000, step=1),
+                                                                                                                                          numericInput(inputId="ptcount_box1",label="Minimum Adverse Event Count",min=5,max=100,value=10, step=1)
+                                                                                                                                      ),
+                                                                                                                                      tags$div(
+                                                                                                                                          h5("Filter Substances by ATC Classification"),
+                                                                                                                                          uiOutput("class1"),
+                                                                                                                                          uiOutput("class2"),
+                                                                                                                                          uiOutput("class3"),
+                                                                                                                                          uiOutput("class4") 
+                                                                                                                                      )
+                                            ),
+                                            tags$div(align="center", actionButton("filt", "Filter"), actionButton("reset", "Reset")),
+                                            tags$head(tags$style("#reset .modal-footer{ display:none; margin: auto}")),
+                                            tags$head(tags$style("#filter .modal-footer{ display:none; margin: auto}")),
+                                            tags$head(tags$style("#filt {display:inline-block; padding:0.3em 1.2em; margin:0 0.1em 0.1em 0; border:0.16em solid rgba(255,255,255,0);  
+                                        box-sizing: border-box; text-decoration:none; font-family:'Roboto',sans-serif; font-weight:300; color:#FFFFFF; 
+                                        text-shadow: 0 0.04em 0.04em rgba(0,0,0,0.35); text-align:center; background-color:#55c24f}")),
+                                            tags$head(tags$style("#reset {display:inline-block; padding:0.3em 1.2em; margin:0 0.1em 0.1em 0; border:0.16em solid rgba(255,255,255,0); 
+                                        box-sizing: border-box; text-decoration:none; font-family:'Roboto',sans-serif; font-weight:300; color:#FFFFFF; 
+                                        text-shadow: 0 0.04em 0.04em rgba(0,0,0,0.35); text-align:center; background-color:#bdbdbd}")),
+                                            tags$head(tags$style("#reset:hover { background-color: #8f8f8f}")),
+                                            tags$head(tags$style("#filt:hover { background-color:#45a340 }"))
+                                            ),
+                                            actionButton("pop_mult_ae1", label="", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: right"), 
+                                            bsModal("mult_ae1_modal", "", trigger="pop_mult_ae1", size="large", plotlyOutput("mult_ae12")),
+                                            withSpinner(plotlyOutput("mult_ae1"))
                                    )
+                                     
+                                )
                             )
-                        )
+                        
                         
                 ),
                 tabItem("compare_subs",
@@ -301,11 +301,7 @@ tagList(
                                    )
                             ),
                             column(width=8,
-                                   tabBox(
-                                       width=NULL,
-                                       id = "tabset2",
-                                       # height = "450px",
-                                       tabPanel("Two Substances", div(
+                                       box(title="Two Substances", width=NULL, div(
                                            style = "position:relative",
                                            actionButton("dt_open2", "Data Table"),
                                            actionButton("pop_scatterPlot2", label="", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: right"), 
@@ -322,8 +318,11 @@ tagList(
                                                 div(style="float:right", selectInput("downloadType3", label=NULL, choices=c("CSV"=".csv", "TXT"=".txt", "XLSX"=".xlsx", "JSON"=".json"), selected=".csv", width=80)),
                                                 
                                                 DTOutput("table2")
-                                       ),
-                                       tabPanel(title = "Multiple Susbtances", width = "100%",
+                                       )
+                                   )),
+                              fluidRow(
+                                column(width=12,
+                                       box(title = "Multiple Susbtances", width = NULL,
                                                 selectizeInput("sub1", "Substance", vars2, width = "30%",  selected = vars2[11], options = list(maxOptions=2500)),
                                                 # other_ae --> sub2
                                                 dropdownBtn(
@@ -338,8 +337,6 @@ tagList(
                                        )
                                    )
                             )
-                            
-                        )
                 ),
                 tabItem("class_comp",
                         fluidRow(
@@ -373,25 +370,26 @@ tagList(
                                                                                  withSpinner(plotlyOutput("boxplots")))),
                                      tabPanel("Histogram", width=12,
                                               splitLayout(  
-                                                       div(style="margin-top: 40px; overflow-x: hidden", 
-                                                           actionButton("pop_histogram", label="", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: left"), 
-                                                           bsModal("histogram_modal", "", trigger="pop_histogram", size="large", div(style="margin-top: 60px; overflow-x: hidden", plotlyOutput("histogram2"))),
-                                                           tags$br(), tags$br(),
-                                                           withSpinner(plotlyOutput("histogram"))),
-                                                       div(uiOutput("drug_name"), tags$style(HTML("#drug_name{font-size: large; text-align: center}")), div(style="float: left; display:inline-block", numericInput("pcentile_input", "Percentile", value=95, step=.5, width="75px")),
-                                                                                      div(style="display: inline-block", uiOutput("perc_val")), div(style="display: inline-block", uiOutput("perc_count")),
-                                                       div(style="float:right", downloadButton("dload4_1", "Download")),
-                                                       div(style="float:right", selectInput("downloadType4_1", label=NULL, choices=c("CSV"=".csv", "TXT"=".txt", "XLSX"=".xlsx", "JSON"=".json"), selected=".csv", width=80)),
-                                                       DTOutput("drugperc")))
+                                                        div(style="overflow-x: scroll", 
+                                                            actionButton("pop_histogram", label="", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: left"), 
+                                                            tags$br(), tags$br(), hidden(textOutput("percentile")), tags$head(tags$style("#percentile{color: red; overflow-wrap: break-word;}")),
+                                                            bsModal("histogram_modal", "", trigger="pop_histogram", size="large", div(style="margin-top: 60px; overflow-x: hidden", plotlyOutput("histogram2"))),
+                                                            tags$br(), tags$br(),
+                                                            withSpinner(plotlyOutput("histogram"))),
+                                                        div(uiOutput("drug_name"), tags$style(HTML("#drug_name{font-size: large; text-align: center}")), div(style="float: left; display:inline-block", numericInput("pcentile_input", "Percentile", value=95, step=.5, width="75px")),
+                                                        div(style="display: inline-block", uiOutput("perc_val")), div(style="display: inline-block", uiOutput("perc_count")),
+                                                        div(style="float:right", downloadButton("dload4_1", "Download")),
+                                                        div(style="float:right", selectInput("downloadType4_1", label=NULL, choices=c("CSV"=".csv", "TXT"=".txt", "XLSX"=".xlsx", "JSON"=".json"), selected=".csv", width=80)),
+                                                        DTOutput("drugperc")))
                                        ),
                                      tabPanel("PRRs Sorted", div(style="width:30%", uiOutput("sortby4")), div(style="overflow-x: scroll; position: relative", 
                                                                                                               actionButton("pop_bar4", label="", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: right"), 
                                                                                                               tags$br(), tags$br(),
                                                                                                               bsModal("bar4_modal", "", trigger="pop_bar4", size="large", div(style="overflow-x: scroll; position: relative", plotlyOutput("bar42"))),
-                                                                                                              withSpinner(plotlyOutput("bar4"))), status="warning")
+                                                                                                              withSpinner(plotlyOutput("bar4"))), status="warning"))
                                    )
                             )
-                        )
+                        
                 ),
                 tabItem("heatmap", 
                         fluidPage(
