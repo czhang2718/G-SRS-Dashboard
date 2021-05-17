@@ -370,9 +370,9 @@ tagList(
                                                                                  withSpinner(plotlyOutput("boxplots")))),
                                      tabPanel("Histogram", width=12,
                                               splitLayout(  
-                                                        div(style="overflow-x: scroll", 
+                                                        div(style="overflow-x: hidden", 
                                                             actionButton("pop_histogram", label="", icon = icon("fas fa-expand-arrows-alt"), style="display: inline-block; float: left"), 
-                                                            tags$br(), tags$br(), hidden(textOutput("percentile")), tags$head(tags$style("#percentile{color: red; overflow-wrap: break-word;}")),
+                                                            tags$br(), tags$br(), hidden(textOutput("percentile")), tags$head(tags$style("#percentile{color: red; overflow-x: scroll;}")),
                                                             bsModal("histogram_modal", "", trigger="pop_histogram", size="large", div(style="margin-top: 60px; overflow-x: hidden", plotlyOutput("histogram2"))),
                                                             tags$br(), tags$br(),
                                                             withSpinner(plotlyOutput("histogram"))),
