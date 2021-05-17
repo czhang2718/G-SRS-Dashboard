@@ -801,6 +801,7 @@ function(input, output, session) {
         plot_ly(dat, x = ~reorder(name, -cor), y = ~round(cor, digits = 2), type = "bar", color = ~cor>0, colors = c("#e82a2a", "#1b3fcf"), 
                 source = "Aa", name = "<extra><extra>") %>% 
             layout(
+                title=input$ae1,
                 yaxis = list(title = "Pearson&#39;s Correlation Coefficient"),
                 xaxis = list(title = "Adverse Event"),
                 showlegend = FALSE,
@@ -1251,6 +1252,7 @@ function(input, output, session) {
         plot_ly(dat, x = ~reorder(name, -cor), y = ~round(cor, digits = 2), type = "bar", color = ~cor>0, colors = c("#e82a2a", "#1b3fcf"), 
                 source = "B", name = "<extra><extra>") %>% 
             layout(
+                title=input$sub1,
                 xaxis = list(title = "Substance"),
                 yaxis = list(title = "Pearson's Correlation Coefficient"),
                 showlegend = FALSE,
@@ -1975,8 +1977,18 @@ function(input, output, session) {
     
     observeEvent(input$drugperc_rows_selected, ignoreNULL = FALSE, {
         x_val(unique(dset[which(dset$INAME==input$cc_2 & dset$PRR>=quantile(class_dat_global()$PRR, input$pcentile_input/100)), "L10_PRR"])[input$drugperc_rows_selected])
+        if(length(x_val())==0) hide("percentile")
+        else show("percentile")
     })
     
+    output$percentile <- renderText({
+        dat <- summaryBy(L10_PRR ~ PT_TERM, data = class_dat_global(), 
+                         FUN = list(median))$L10_PRR.median
+        ptile=ecdf(dat)(x_val())
+        
+        ae=unique(dset[which(dset$INAME==input$cc_2 & dset$PRR>=quantile(class_dat_global()$PRR, input$pcentile_input/100)), "PT_TERM"])[input$drugperc_rows_selected]
+        paste("PRR of", ae, "associated with", input$cc_2, "is greater than", round(100*ptile, 2), "% of substances in the selected class")
+    })
     
     vline <- function(x = 0, color = "red") {
         list(
